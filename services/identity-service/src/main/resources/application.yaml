@@ -1,0 +1,44 @@
+# All environment-specific values come from environment variables (12-factor).
+# Defaults point at the local compose stack (postgres on host port 5433).
+spring:
+  application:
+    name: identity-service
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5433/identity}
+    username: ${DB_USER:identity}
+    password: ${DB_PASSWORD}
+    hikari:
+      maximum-pool-size: ${DB_POOL_SIZE:5}
+  jpa:
+    # Flyway owns the schema; Hibernate only checks that entities match it.
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+
+server:
+  port: ${PORT:8081}
+
+management:
+  endpoints:
+    web:
+      # Actuator lives at the root so Prometheus can scrape /metrics.
+      # Full health stays reachable at /actuator/health for debugging.
+      base-path: /
+      exposure:
+        include: health,prometheus
+      path-mapping:
+        prometheus: metrics
+        health: actuator/health
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      group:
+        # Liveness: "is the process stuck?" Never include the DB, or a DB outage restarts every pod.
+        liveness:
+          include: livenessState
+          additional-path: "server:/health"
+        # Readiness: "can it serve traffic now?" Includes the DB, so K8s stops routing to it when the DB is down.
+        readiness:
+          include: readinessState,db
+          additional-path: "server:/ready"

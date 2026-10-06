@@ -51,7 +51,9 @@ Decision (2026-10-06): native Windows + Git Bash, not WSL2. Project lives in `C:
       `core` = postgres+redis, `events` = mailpit (Kafka/MongoDB join in Phase 3).
 - [x] Postgres init script: separate database and user for identity-service
       `identity` role + DB (SCRAM password from `.env`); CONNECT revoked from PUBLIC on `identity` and `postgres`.
-- [ ] identity-service: Spring Boot project, Flyway, Actuator, `/health` `/ready` `/metrics`
+- [x] identity-service: Spring Boot project, Flyway, Actuator, `/health` `/ready` `/metrics`
+      2026-10-06: Boot 4.1.1, Gradle 9.7.1. `/health` = liveness (no DB), `/ready` = readiness (incl. DB → 503 when
+      Postgres is down), `/metrics` = Prometheus. 4 tests green (Testcontainers, same pgvector image as compose).
 - [ ] Tables: users, organizations, memberships, refresh_tokens
 - [ ] Endpoints: register, login, refresh, logout, `GET /me`, create org, switch active org
 - [ ] RS256 key pair + `/.well-known/jwks.json`
