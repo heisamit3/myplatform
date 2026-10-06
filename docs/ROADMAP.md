@@ -24,6 +24,10 @@ Claude Code adds items here when they can't be done remotely. Clear this list wh
 - [ ] minikube warned "Failing to connect to https://registry.k8s.io/ from inside the minikube container".
       The cluster started anyway (images were cached). Before Phase 5, test pulls with
       `minikube ssh -- curl -sI https://registry.k8s.io`. Cloudflare WARP is a likely suspect.
+- [ ] GHCR packages are private by default. Make each public (GitHub → profile → Packages → `myplatform/<service>`
+      → Package settings → Change visibility → Public) for identity-service, api-gateway, notification-service,
+      so minikube/EKS can pull without a pull secret.
+- [ ] `gh auth refresh -s read:packages` (browser login) so Claude Code can list GHCR images/tags from the CLI.
 - [ ] Phase 2 UI click-through: `docker compose -f infra/compose/compose.yaml --profile core up -d`, then
       `cd web && npm run dev`, open http://localhost:5173 → register → (lands on dashboard) → create an org →
       create a second org → switch with the header dropdown → Profile → reload the page (should stay logged in) → Log out.
@@ -141,10 +145,18 @@ Decision (2026-10-06): native Windows + Git Bash, not WSL2. Project lives in `C:
 
 ## Phase 4: CI with GitHub Actions (week 8)
 
-- [ ] One workflow per service, triggered only by changes in that service's path
-- [ ] Steps: build → test → build Docker image → push to GHCR (tagged with commit SHA)
-- [ ] Frontend workflow: lint, typecheck, build
-- [ ] CI status badges in README
+- [x] One workflow per service, triggered only by changes in that service's path
+      2026-10-06: `identity-service`, `api-gateway`, `notification-service`, `web`, `contracts` (ADR 0015).
+      Filters include the contracts a service's tests read. Verified: a gateway-only commit ran only `api-gateway`.
+      Actions pinned by commit SHA, `permissions: {}` by default, actionlint clean.
+- [x] Steps: build → test → build Docker image → push to GHCR (tagged with commit SHA)
+      2026-10-06: test job (Gradle / npm incl. Testcontainers) → reusable `_build-image.yml` (Buildx, GHA layer
+      cache). Push only from `main`, PRs build only. `ghcr.io/heisamit3/myplatform/<service>:<full SHA>`, no `:latest`.
+      First runs: identity 4m54s, notification 3m13s, gateway ~2 min. CI caught a timing-dependent assertion in
+      `RateLimitTests` (refill during the 11 requests on a slower runner), fixed.
+- [x] Frontend workflow: lint, typecheck, build
+      2026-10-06: `web.yml` also runs the Vitest tests. 37 s. Plus `contracts.yml` (event schemas + redocly lint), 27 s.
+- [x] CI status badges in README
 
 ## Phase 5: Kubernetes locally (weeks 9–11)
 
