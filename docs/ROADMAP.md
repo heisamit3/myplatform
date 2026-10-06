@@ -6,6 +6,16 @@ Tags: 🖥️ = needs me at the PC. Untagged = fine from the phone.
 
 ---
 
+## 📍 Status (last session: 2026-10-06)
+
+- **Done:** Phases 0–4, and Phase 5 except one item. CI is green on `main`. Images in GHCR: identity-service,
+  api-gateway, notification-service and web, tagged with the commit SHA.
+- **Open in Phase 5:** rewrite `docs/k8s-objects.md` in my own words (draft exists), then tick it.
+- **Next:** Phase 6, GitOps with Argo CD (dedicated K8s session; minikube raised to 3 GB, see CLAUDE.md).
+- **State left behind:** minikube stopped; the cluster keeps postgres, redis, Traefik and the 3 Helm releases
+  (monitoring uninstalled). Compose isn't running. Nothing uncommitted.
+- **Before the next K8s session:** reboot (Windows had only ~0.8 GB free), then `./scripts/mem.sh`.
+
 ## 🖥️ At-PC queue
 
 Claude Code adds items here when they can't be done remotely. Clear this list whenever I'm at the PC.
@@ -25,7 +35,7 @@ Claude Code adds items here when they can't be done remotely. Clear this list wh
       2026-10-06: false alarm. From inside minikube, registry.k8s.io / Docker Hub / ghcr.io all answer, and a real
       `docker pull` of a registry.k8s.io image works. The warning still shows on every start; ignore it.
 - [ ] GHCR packages are private by default. Make each public (GitHub → profile → Packages → `myplatform/<service>`
-      → Package settings → Change visibility → Public) for identity-service, api-gateway, notification-service,
+      → Package settings → Change visibility → Public) for identity-service, api-gateway, notification-service, web,
       so minikube/EKS can pull without a pull secret.
 - [ ] `gh auth refresh -s read:packages` (browser login) so Claude Code can list GHCR images/tags from the CLI.
 - [ ] Look at the Grafana dashboard in a browser (K8s monitoring session): `kubectl -n monitoring port-forward
