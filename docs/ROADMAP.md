@@ -14,15 +14,12 @@ Claude Code adds items here when they can't be done remotely. Clear this list wh
       (A sleeping PC ends the remote session.)
 - [ ] Docker Desktop → Settings → Kubernetes: make sure the built-in Kubernetes is **off** (we use minikube)
 - [ ] Docker Desktop → Settings → General: start Docker Desktop on login (so remote sessions always have Docker)
-- [ ] Create `C:\Users\HP\.wslconfig` with `memory=4GB` and `swap=4GB` (Docker Desktop's VM reads it; the file
-      doesn't exist yet as of 2026-10-06). Then quit Docker Desktop, run `wsl --shutdown` from PowerShell and
-      start Docker Desktop again. Stop minikube first.
-- [ ] Restart Claude Code from `C:\dev\myplatform` (this session still runs in the old OneDrive folder, so
-      `.claude/settings.json` in the new repo isn't active yet). Then delete the old OneDrive copy.
-- [ ] Install missing tools (a UAC prompt may appear):
+- [x] Restart Claude Code from `C:\dev\myplatform` (done 2026-10-06)
+- [ ] Delete the old OneDrive copy of the project
+- [x] Install missing tools (a UAC prompt may appear):
       `winget install --id GitHub.cli -e` · `winget install --id Helm.Helm -e` · `winget install --id astral-sh.uv -e`
       Then open a new Git Bash and run `gh auth login`.
-- [ ] Approve the `.claude/settings.json` update (Claude Code may not edit its own permissions): allow `./scripts/mem.sh`
+- [x] Approve the `.claude/settings.json` update (Claude Code may not edit its own permissions): allow `./scripts/mem.sh`
       instead of `free -h`, plus `winget list:*` / `winget search:*`; deny `wsl --shutdown:*` and `shutdown:*`.
 - [ ] minikube warned "Failing to connect to https://registry.k8s.io/ from inside the minikube container".
       The cluster started anyway (images were cached). Before Phase 5, test pulls with
@@ -38,8 +35,9 @@ Decision (2026-10-06): native Windows + Git Bash, not WSL2. Project lives in `C:
 - [x] Inventory what's installed: git, JDK 21, Node LTS, Python 3.12+, uv, helm, gh
       2026-10-06: docker 27.2.0, compose 2.29.2, kubectl 1.31.0, minikube 1.34.0, git 2.45.2, Java 21.0.5,
       Node 24.19.0, Python 3.12.5 ✅ · missing: gh, helm, uv
-- [ ] 🖥️ Install anything missing with winget (may show a UAC prompt)
-- [ ] Check `gh auth status`. If not logged in → 🖥️ `gh auth login` (opens a browser)
+- [x] 🖥️ Install anything missing with winget (may show a UAC prompt)
+      2026-10-06: gh 2.102.0, helm v4.3.0, uv 0.12.23 ✅
+- [x] Check `gh auth status`. Logged in as `heisamit3` (scopes: repo, workflow, read:org, gist).
 - [ ] 🖥️ (only if gh isn't logged in) Create the GitHub repo (public, so it counts for the portfolio)
 - [x] Repo in `C:\dev\myplatform` with `CLAUDE.md`, `docs/ROADMAP.md`, `.claude/settings.json`, `.gitattributes`,
       `.gitignore`, `.editorconfig` and a basic `README.md`

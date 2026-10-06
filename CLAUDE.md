@@ -114,8 +114,8 @@ infra/terraform/aws/       # VPC, EKS, IAM, etc.
 
 ## Resource limits (MUST follow: the machine has 8 GB RAM)
 
-- Docker Desktop runs containers (and minikube) in its own WSL2 VM, capped by `C:\Users\HP\.wslconfig`
-  (memory=4GB, swap=4GB). Assume about 3.5 GB is usable for containers.
+- Docker Desktop runs containers (and minikube) in its own WSL2 VM. There is **no** `.wslconfig`, so the VM
+  uses WSL2's default limit (about 3.7 GB). Assume about 3.2 GB is usable for containers.
 - Every container gets an explicit memory limit. Default budgets:
   postgres 256M · redis 64M · mongodb 384M (`--wiredTigerCacheSizeGB 0.25`) · kafka 768M (heap 512M) ·
   mailpit 64M · each Spring service 384M (`-XX:MaxRAMPercentage=75`) · Node service 192M.

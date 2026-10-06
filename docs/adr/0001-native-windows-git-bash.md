@@ -13,7 +13,7 @@ and the project sat in a OneDrive folder.
 
 - Use native Windows 11 with Git Bash as the shell. Install tools with winget.
 - Keep the repo in `C:\dev\myplatform`, outside OneDrive (sync locks and rewrites files under `.git`, `build/`, `node_modules/`).
-- Docker Desktop (WSL2 backend) still runs all containers and minikube; `.wslconfig` caps its VM.
+- Docker Desktop (WSL2 backend) still runs all containers and minikube. No `.wslconfig`: its VM uses WSL2's default memory limit (about 3.7 GB).
 - `.gitattributes` forces LF so scripts and Dockerfiles work inside Linux containers.
 
 ## Consequences
