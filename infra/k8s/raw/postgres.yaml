@@ -1,0 +1,106 @@
+# PostgreSQL (with pgvector), one instance shared by the services, one database + role per service.
+# Same image, settings and init script as compose. Needs (created by scripts/k8s-local-secrets.sh, never committed):
+#   Secret postgres-admin {password}, Secret identity-db {password}, ConfigMap postgres-init (the compose init script).
+
+# Headless Service (clusterIP: None): no virtual IP, DNS "postgres" returns the pod's IP directly.
+# A StatefulSet needs one to give its pods stable names (postgres-0.postgres.myplatform.svc).
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: myplatform
+  labels:
+    app.kubernetes.io/name: postgres
+    app.kubernetes.io/part-of: myplatform
+spec:
+  clusterIP: None
+  selector:
+    app.kubernetes.io/name: postgres
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: postgres
+---
+# StatefulSet instead of Deployment: the pod keeps its name (postgres-0) and its own disk across restarts
+# and rescheduling. A Deployment treats pods as interchangeable, which a database isn't.
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+  namespace: myplatform
+  labels:
+    app.kubernetes.io/name: postgres
+    app.kubernetes.io/part-of: myplatform
+spec:
+  serviceName: postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: postgres
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: postgres
+        app.kubernetes.io/part-of: myplatform
+    spec:
+      # The official image starts as root, fixes data-dir ownership, then drops to the postgres user (UID 999).
+      containers:
+        - name: postgres
+          image: pgvector/pgvector:0.8.7-pg18-trixie
+          # Small buffers so Postgres fits in 256Mi (same as compose).
+          args: ["-c", "shared_buffers=64MB", "-c", "max_connections=50", "-c", "work_mem=2MB"]
+          env:
+            - name: POSTGRES_USER
+              value: postgres
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef: { name: postgres-admin, key: password }
+            # Read by the init script (one DB + role per service).
+            - name: IDENTITY_DB_PASSWORD
+              valueFrom:
+                secretKeyRef: { name: identity-db, key: password }
+          ports:
+            - name: postgres
+              containerPort: 5432
+          # Requests = what the scheduler reserves; limits = the hard cap (above the memory limit the container is OOM-killed).
+          resources:
+            requests: { cpu: 100m, memory: 256Mi }
+            limits: { memory: 256Mi }
+          # Readiness: only route connections once the server accepts them (TCP, not the init-time socket server).
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "postgres", "-h", "127.0.0.1"]
+            periodSeconds: 5
+            timeoutSeconds: 3
+          # Liveness: restart only if it stays unresponsive for a minute (first-start init takes a few seconds).
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", "postgres", "-h", "127.0.0.1"]
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          volumeMounts:
+            # Postgres 18 images keep data under /var/lib/postgresql/<major>/, so mount the parent (as in compose).
+            - name: data
+              mountPath: /var/lib/postgresql
+            # Runs only when the data directory is empty, like in compose.
+            - name: init
+              mountPath: /docker-entrypoint-initdb.d
+              readOnly: true
+      volumes:
+        - name: init
+          configMap:
+            name: postgres-init
+            # Executable: the entrypoint runs *.sh files that have the exec bit and sources the others.
+            defaultMode: 0555
+  # One PersistentVolumeClaim per pod ("data-postgres-0"). minikube's default StorageClass provisions it
+  # as a host directory. Deleting the StatefulSet keeps the claim and the data; delete the PVC to start fresh.
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 1Gi

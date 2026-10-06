@@ -1,0 +1,8 @@
+# A namespace groups the app's objects and keeps them apart from the cluster's own (kube-system).
+# Every command needs `-n myplatform`, or once: kubectl config set-context --current --namespace=myplatform
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: myplatform
+  labels:
+    app.kubernetes.io/part-of: myplatform

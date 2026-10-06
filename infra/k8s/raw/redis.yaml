@@ -1,0 +1,68 @@
+# Redis for the gateway's rate limits (cache only, no persistence, same settings as compose).
+# A Deployment, not a StatefulSet: with no data on disk there is nothing to keep across restarts,
+# and a fresh pod with empty buckets is fine.
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: myplatform
+  labels:
+    app.kubernetes.io/name: redis
+    app.kubernetes.io/part-of: myplatform
+spec:
+  selector:
+    app.kubernetes.io/name: redis
+  ports:
+    - name: redis
+      port: 6379
+      targetPort: redis
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: myplatform
+  labels:
+    app.kubernetes.io/name: redis
+    app.kubernetes.io/part-of: myplatform
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: redis
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: redis
+        app.kubernetes.io/part-of: myplatform
+    spec:
+      # The image's redis user. Nothing is written to disk, so no root start is needed.
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        runAsGroup: 1000
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: redis
+          image: redis:8.10.2-alpine
+          # noeviction: when full, writes fail loudly instead of silently dropping keys.
+          args: ["redis-server", "--maxmemory", "48mb", "--maxmemory-policy", "noeviction", "--save", "", "--appendonly", "no"]
+          ports:
+            - name: redis
+              containerPort: 6379
+          resources:
+            requests: { cpu: 50m, memory: 64Mi }
+            limits: { memory: 64Mi }
+          readinessProbe:
+            exec:
+              command: ["redis-cli", "ping"]
+            periodSeconds: 5
+          livenessProbe:
+            tcpSocket:
+              port: redis
+            periodSeconds: 10
+            failureThreshold: 3
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
