@@ -18,10 +18,10 @@ class RoutingAndAuthTests {
 
     @Test
     void authEndpointsAreRoutedWithoutAToken() {
-        http.post().uri("/auth/login").contentType(MediaType.APPLICATION_JSON).bodyValue("{}").exchange()
+        http.post().uri("/auth/register").contentType(MediaType.APPLICATION_JSON).bodyValue("{}").exchange()
                 .expectStatus().isOk()
                 .expectBody()
-                .jsonPath("$.path").isEqualTo("/auth/login")
+                .jsonPath("$.path").isEqualTo("/auth/register")
                 .jsonPath("$.method").isEqualTo("POST");
     }
 

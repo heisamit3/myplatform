@@ -35,6 +35,8 @@ spring:
                     redis-rate-limiter.replenishRate: 1
                     redis-rate-limiter.burstCapacity: 60
                     redis-rate-limiter.requestedTokens: 6
+                # Refresh token: JSON body <-> HttpOnly cookie (ADR 0008).
+                - RefreshTokenCookie
             - id: identity-register
               uri: ${IDENTITY_URI:http://localhost:8081}
               order: -1
@@ -47,6 +49,22 @@ spring:
                     redis-rate-limiter.replenishRate: 1
                     redis-rate-limiter.burstCapacity: 60
                     redis-rate-limiter.requestedTokens: 12
+            - id: identity-session
+              uri: ${IDENTITY_URI:http://localhost:8081}
+              order: -1
+              predicates:
+                - Path=/auth/refresh,/auth/switch-org
+              filters:
+                - RefreshTokenCookie
+            - id: identity-logout
+              uri: ${IDENTITY_URI:http://localhost:8081}
+              order: -1
+              predicates:
+                - Path=/auth/logout
+              filters:
+                - name: RefreshTokenCookie
+                  args:
+                    endSession: true
             # Paths stay as identity-service defines them (ADR 0006). The Authorization header is
             # forwarded as is, so identity-service validates the token again (defense in depth).
             - id: identity
@@ -63,6 +81,11 @@ gateway:
     # (compose). Behind one ingress proxy (Kubernetes): 1. Never trust more hops than really exist,
     # or clients can pick their own rate-limit key by sending a fake X-Forwarded-For.
     trusted-proxies: ${RATE_LIMIT_TRUSTED_PROXIES:0}
+  refresh-cookie:
+    name: refresh_token
+    secure: ${REFRESH_COOKIE_SECURE:true}
+    # Same as identity-service's REFRESH_TOKEN_TTL.
+    max-age: ${REFRESH_COOKIE_MAX_AGE:7d}
   cors:
     # Comma-separated. The Vite dev server locally; the real web origin in Kubernetes.
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}

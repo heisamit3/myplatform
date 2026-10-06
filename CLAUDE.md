@@ -233,6 +233,9 @@ Assume I may be on my phone unless I say "I'm at the PC".
   `{"refreshToken":"..."}` to `/auth/refresh` (new pair) or `/auth/logout` (204)
   Bearer endpoints: `curl -s -H "Authorization: Bearer $ACCESS" localhost:8081/me` · `POST /orgs {"name","slug"}`
   · switch org: `POST /auth/switch-org {"refreshToken","orgId"}` → new pair with the `org` claim
+- Through the gateway (8080) the refresh token is an HttpOnly cookie, never in the body (ADR 0008). Use a cookie jar:
+  `curl -s -c jar -b jar -H 'Content-Type: application/json' -d '{"email":...,"password":...}' localhost:8080/auth/login`
+  then `curl -s -c jar -b jar -X POST localhost:8080/auth/refresh` (body optional). Login 10/min, register 5/min per IP.
 - OpenAPI: served at `localhost:8081/v3/api-docs.yaml`; committed copy `contracts/openapi/identity.yaml` is checked by a test.
   After an API change: `cd services/identity-service && UPDATE_CONTRACTS=true ./gradlew test --tests '*OpenApiContractTests'`
   Lint: `npx -y @redocly/cli@latest lint contracts/openapi/identity.yaml`
