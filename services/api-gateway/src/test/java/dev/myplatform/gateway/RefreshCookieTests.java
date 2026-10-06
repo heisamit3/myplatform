@@ -93,6 +93,25 @@ class RefreshCookieTests {
     }
 
     @Test
+    void refreshWithNeitherCookieNorBodyIs401WithoutCallingIdentity() {
+        identity.resetLastBody();
+        http.post().uri("/auth/refresh").exchange()
+                .expectStatus().isUnauthorized()
+                .expectHeader().contentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .expectBody().jsonPath("$.detail").isEqualTo("No session");
+        assertThat(identity.lastBody()).isNull();
+    }
+
+    @Test
+    void logoutWithoutACookieIs204AndStillDeletesAnyCookie() {
+        identity.resetLastBody();
+        http.post().uri("/auth/logout").exchange()
+                .expectStatus().isNoContent()
+                .expectCookie().maxAge(COOKIE, Duration.ZERO);
+        assertThat(identity.lastBody()).isNull();
+    }
+
+    @Test
     void withoutACookieTheBodyIsForwardedUnchanged() {
         http.post().uri("/auth/refresh").contentType(MediaType.APPLICATION_JSON).bodyValue("{}").exchange()
                 .expectStatus().isOk();

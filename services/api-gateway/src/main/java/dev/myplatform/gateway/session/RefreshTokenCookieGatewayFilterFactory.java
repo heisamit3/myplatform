@@ -1,5 +1,6 @@
 package dev.myplatform.gateway.session;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -13,6 +14,7 @@ import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFac
 import org.springframework.cloud.gateway.filter.factory.rewrite.ModifyRequestBodyGatewayFilterFactory;
 import org.springframework.cloud.gateway.filter.factory.rewrite.ModifyResponseBodyGatewayFilterFactory;
 import org.springframework.http.HttpCookie;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseCookie;
@@ -29,6 +31,8 @@ import reactor.core.publisher.Mono;
  * A 401 (revoked or reused token) deletes the cookie.</li>
  * <li>Request: if the JSON body has no {@code refreshToken}, the cookie's value is put in.</li>
  * <li>{@code endSession: true} (logout): the cookie is deleted whatever identity-service answers.</li>
+ * <li>Neither a cookie nor a body: there is no session to act on, so the gateway answers itself
+ * (401, or 204 for logout) instead of letting identity-service reject a request without a token.</li>
  * </ul>
  * Use in a route: {@code - RefreshTokenCookie} or {@code - name: RefreshTokenCookie, args: {endSession: true}}.
  */
@@ -70,11 +74,37 @@ class RefreshTokenCookieGatewayFilterFactory
             return new OrderedGatewayFilter((exchange, chain) -> {
                 // Before proxying, so the cookie goes away even if identity-service is down.
                 exchange.getResponse().addCookie(cookie(""));
+                if (hasNoToken(exchange)) {
+                    exchange.getResponse().setStatusCode(HttpStatus.NO_CONTENT);
+                    return exchange.getResponse().setComplete();
+                }
                 return requestFilter.filter(exchange, chain);
             }, order);
         }
-        return new OrderedGatewayFilter((exchange, chain) -> requestFilter.filter(exchange,
-                modified -> responseFilter.filter(modified, chain)), order);
+        return new OrderedGatewayFilter((exchange, chain) -> {
+            if (hasNoToken(exchange)) {
+                return noSession(exchange.getResponse());
+            }
+            return requestFilter.filter(exchange, modified -> responseFilter.filter(modified, chain));
+        }, order);
+    }
+
+    /** No cookie and no body (so no refreshToken field either). A browser on its first visit, typically. */
+    private boolean hasNoToken(ServerWebExchange exchange) {
+        var request = exchange.getRequest();
+        HttpCookie sent = request.getCookies().getFirst(cookie.name());
+        boolean hasBody = request.getHeaders().getContentLength() > 0
+                || request.getHeaders().containsHeader(HttpHeaders.TRANSFER_ENCODING);
+        return (sent == null || sent.getValue().isEmpty()) && !hasBody;
+    }
+
+    private static Mono<Void> noSession(ServerHttpResponse response) {
+        response.setStatusCode(HttpStatus.UNAUTHORIZED);
+        response.getHeaders().setContentType(MediaType.APPLICATION_PROBLEM_JSON);
+        byte[] body = """
+                {"type":"about:blank","title":"Unauthorized","status":401,"detail":"No session"}"""
+                .getBytes(StandardCharsets.UTF_8);
+        return response.writeWith(Mono.just(response.bufferFactory().wrap(body)));
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })

@@ -65,9 +65,13 @@ final class FakeIdentityService {
         return INSTANCE;
     }
 
-    /** The raw body of the last session-endpoint request, as the gateway forwarded it. */
+    /** The raw body of the last session-endpoint request, as the gateway forwarded it; null after a reset. */
     String lastBody() {
         return lastBody.get();
+    }
+
+    void resetLastBody() {
+        lastBody.set(null);
     }
 
     String baseUri() {
