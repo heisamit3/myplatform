@@ -3,6 +3,7 @@ package dev.myplatform.identity.auth;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Function;
 
 import org.jspecify.annotations.Nullable;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import dev.myplatform.identity.org.Membership;
+import dev.myplatform.identity.org.MembershipId;
 import dev.myplatform.identity.org.MembershipRepository;
 import dev.myplatform.identity.token.AccessTokenIssuer;
 import dev.myplatform.identity.token.JwtProperties;
@@ -65,17 +67,46 @@ class AuthService {
         if (user.isEmpty() || !passwordMatches) {
             throw new InvalidCredentialsException();
         }
-
         UUID userId = user.get().getId();
-        Optional<Membership> activeMembership = memberships.findFirstByIdUserIdOrderByCreatedAtAsc(userId);
-        @Nullable UUID orgId = activeMembership.map(m -> m.getId().orgId()).orElse(null);
-        List<String> roles = activeMembership.map(m -> List.of(m.getRole().name())).orElse(List.of());
+        return issueTokens(userId, activeMembership(userId, null),
+                orgId -> refreshTokens.issueNewFamily(userId, orgId));
+    }
 
+    // noRollbackFor: a reused token revokes its family and then fails; that revocation must still commit.
+    @Transactional(noRollbackFor = InvalidRefreshTokenException.class)
+    TokenResponse refresh(RefreshTokenRequest request) {
+        RefreshToken current = refreshTokens.consume(request.refreshToken());
+        UUID userId = current.getUserId();
+        // Roles are re-read on every refresh, so a role change reaches tokens within one access-token TTL.
+        return issueTokens(userId, activeMembership(userId, current.getOrgId()),
+                orgId -> refreshTokens.rotate(current, orgId));
+    }
+
+    @Transactional
+    void logout(RefreshTokenRequest request) {
+        refreshTokens.revokeFamilyOf(request.refreshToken());
+    }
+
+    private Optional<Membership> activeMembership(UUID userId, @Nullable UUID preferredOrgId) {
+        if (preferredOrgId != null) {
+            Optional<Membership> preferred = memberships.findById(new MembershipId(preferredOrgId, userId));
+            if (preferred.isPresent()) {
+                return preferred;
+            }
+        }
+        // No org chosen yet, or the user was removed from it: start in the first org they joined.
+        return memberships.findFirstByIdUserIdOrderByCreatedAtAsc(userId);
+    }
+
+    private TokenResponse issueTokens(UUID userId, Optional<Membership> membership,
+            Function<@Nullable UUID, String> refreshTokenForOrg) {
+        @Nullable UUID orgId = membership.map(m -> m.getId().orgId()).orElse(null);
+        List<String> roles = membership.map(m -> List.of(m.getRole().name())).orElse(List.of());
         return new TokenResponse(
                 accessTokens.issue(userId, orgId, roles),
                 "Bearer",
                 accessTokenTtlSeconds,
-                refreshTokens.issueNewFamily(userId, orgId));
+                refreshTokenForOrg.apply(orgId));
     }
 
 }

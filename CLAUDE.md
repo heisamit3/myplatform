@@ -226,6 +226,7 @@ Assume I may be on my phone unless I say "I'm at the PC".
 - Register / login (identity-service on 8081):
   `curl -s -H 'Content-Type: application/json' -d '{"email":"a@example.com","password":"correct horse battery","displayName":"A"}' localhost:8081/auth/register`
   then the same with `{"email":...,"password":...}` to `/auth/login` → `accessToken`, `refreshToken`, `expiresIn`
+  `{"refreshToken":"..."}` to `/auth/refresh` (new pair) or `/auth/logout` (204)
 - Probes: `curl -s localhost:8081/health` · `/ready` · `/metrics` (full health: `/actuator/health`) · JWKS: `/.well-known/jwks.json`
 - Start local K8s: `minikube start --driver=docker --kubernetes-version=v1.31.0 --memory=2560 --cpus=2`
 - Check K8s: `kubectl config current-context && kubectl get nodes`

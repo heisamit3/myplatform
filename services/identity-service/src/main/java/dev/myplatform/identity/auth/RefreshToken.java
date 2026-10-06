@@ -49,4 +49,33 @@ class RefreshToken {
         this.expiresAt = expiresAt;
     }
 
+    UUID getId() {
+        return id;
+    }
+
+    UUID getUserId() {
+        return userId;
+    }
+
+    @Nullable UUID getOrgId() {
+        return orgId;
+    }
+
+    UUID getFamilyId() {
+        return familyId;
+    }
+
+    boolean isRevoked() {
+        return revokedAt != null;
+    }
+
+    boolean isExpiredAt(Instant now) {
+        return !now.isBefore(expiresAt);
+    }
+
+    void replaceWith(RefreshToken successor, Instant now) {
+        this.revokedAt = now;
+        this.replacedBy = successor.getId();
+    }
+
 }

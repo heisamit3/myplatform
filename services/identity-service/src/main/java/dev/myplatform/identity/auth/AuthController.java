@@ -32,4 +32,16 @@ class AuthController {
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(auth.login(request));
     }
 
+    @PostMapping("/refresh")
+    ResponseEntity<TokenResponse> refresh(@Valid @RequestBody RefreshTokenRequest request) {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(auth.refresh(request));
+    }
+
+    /** Always 204, also for unknown or already revoked tokens: logging out twice is not an error. */
+    @PostMapping("/logout")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    void logout(@Valid @RequestBody RefreshTokenRequest request) {
+        auth.logout(request);
+    }
+
 }
