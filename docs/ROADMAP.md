@@ -41,7 +41,7 @@ Decision (2026-10-06): native Windows + Git Bash, not WSL2. Project lives in `C:
 - [ ] 🖥️ (only if gh isn't logged in) Create the GitHub repo (public, so it counts for the portfolio)
 - [x] Repo in `C:\dev\myplatform` with `CLAUDE.md`, `docs/ROADMAP.md`, `.claude/settings.json`, `.gitattributes`,
       `.gitignore`, `.editorconfig` and a basic `README.md`
-- [ ] Create the folder skeleton from the "Repo layout" section in CLAUDE.md
+- [x] Create the folder skeleton from the "Repo layout" section in CLAUDE.md
 - [x] First commit (local, 2026-10-06). Push after the GitHub repo exists and I approve
 
 ## Phase 1: Local data + identity-service (weeks 2–3)
