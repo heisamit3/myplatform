@@ -1,0 +1,67 @@
+# Reusable: build a service's Docker image; on main, push it to GHCR tagged with the commit SHA.
+# Called by the per-service workflows after their tests pass (ADR 0015).
+# Pull requests only build (proves the Dockerfile still works) and never push.
+name: build-image
+
+on:
+  workflow_call:
+    inputs:
+      service:
+        description: Directory under services/ (also the image name)
+        type: string
+        required: true
+
+permissions: {}
+
+jobs:
+  image:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: write
+    env:
+      # The github context is the caller's: a push to main publishes, anything else only builds.
+      PUSH: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Log in to GHCR
+        if: env.PUSH == 'true'
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # ghcr.io/<owner>/myplatform/<service>:<full commit SHA>. Immutable tags only, no :latest:
+      # Argo CD (Phase 6) deploys an exact SHA, so every running pod maps to one commit.
+      # Also sets the OCI labels (source repo, revision, created), which links the package to the repo.
+      - name: Image name, tags and labels
+        id: meta
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
+        with:
+          images: ghcr.io/${{ github.repository }}/${{ inputs.service }}
+          tags: type=sha,format=long,prefix=
+
+      - name: Build${{ env.PUSH == 'true' && ' and push' || '' }}
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: services/${{ inputs.service }}
+          push: ${{ env.PUSH == 'true' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # Layer cache in the GitHub Actions cache, one scope per service so they don't evict each other.
+          cache-from: type=gha,scope=${{ inputs.service }}
+          cache-to: type=gha,mode=max,scope=${{ inputs.service }}
+
+      - name: Summary
+        if: env.PUSH == 'true'
+        run: |
+          echo "Pushed: $TAGS" >> "$GITHUB_STEP_SUMMARY"
+        env:
+          TAGS: ${{ steps.meta.outputs.tags }}
