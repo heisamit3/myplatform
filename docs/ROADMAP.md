@@ -56,18 +56,20 @@ Decision (2026-10-06): native Windows + Git Bash, not WSL2. Project lives in `C:
       Postgres is down), `/metrics` = Prometheus. 4 tests green (Testcontainers, same pgvector image as compose).
 - [x] Tables: users, organizations, memberships, refresh_tokens
       Flyway `V1__identity_schema.sql` (ADR 0002), 6 schema tests on Testcontainers, applied to the compose DB.
-- [ ] Endpoints: register, login, refresh, logout, `GET /me`, create org, switch active org
+- [x] Endpoints: register, login, refresh, logout, `GET /me`, create org, switch active org
       2026-10-06: ✅ `POST /auth/register` (201, bcrypt cost 10, 409 on duplicate) and `POST /auth/login`
       (access + refresh token, active org = first joined, same 401 + bcrypt time for unknown emails).
       Errors are RFC 9457 problem+json.
       ✅ `POST /auth/refresh` (rotation, row lock, reuse → family revoked) and `POST /auth/logout`
-      (204, idempotent). ADR 0003: revocation stays in Postgres. Next: `GET /me`, create org, switch org.
+      (204, idempotent). ADR 0003: revocation stays in Postgres.
+      ✅ Spring Security resource server (Bearer JWT, own public key + issuer check); `GET /me`,
+      `POST /orgs` (creator = OWNER, 409 on slug), `POST /auth/switch-org` (rotates the session, 403 if not a member).
 - [x] RS256 key pair + `/.well-known/jwks.json`
       PKCS#8 key from `JWT_PRIVATE_KEY_PATH` (no key → startup fails), kid = RFC 7638 thumbprint,
       `AccessTokenIssuer` (sub/org/roles, 15 min, iss `http://identity-service`). 20 tests green.
 - [ ] OpenAPI spec exported to `contracts/openapi/identity.yaml`
 - [ ] Unit tests + Testcontainers integration test for register/login
-      2026-10-06: integration tests done (`AuthFlowTests` 6, `RefreshFlowTests` 7). Unit tests still to add.
+      2026-10-06: integration tests done (`AuthFlowTests` 6, `RefreshFlowTests` 7, `TenancyFlowTests` 5). Unit tests still to add.
 - [ ] Dockerfile (multi-stage, non-root), added to the compose `core` profile
 
 ## Phase 2: Gateway + frontend (weeks 4–5)

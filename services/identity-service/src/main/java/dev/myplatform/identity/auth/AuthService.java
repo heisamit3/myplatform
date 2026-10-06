@@ -82,6 +82,16 @@ class AuthService {
                 orgId -> refreshTokens.rotate(current, orgId));
     }
 
+    // A non-member rolls back without changes: the presented refresh token stays valid.
+    @Transactional(noRollbackFor = InvalidRefreshTokenException.class)
+    TokenResponse switchOrg(SwitchOrgRequest request) {
+        RefreshToken current = refreshTokens.consume(request.refreshToken());
+        UUID userId = current.getUserId();
+        Membership membership = memberships.findById(new MembershipId(request.orgId(), userId))
+                .orElseThrow(NotAMemberException::new);
+        return issueTokens(userId, Optional.of(membership), orgId -> refreshTokens.rotate(current, orgId));
+    }
+
     @Transactional
     void logout(RefreshTokenRequest request) {
         refreshTokens.revokeFamilyOf(request.refreshToken());

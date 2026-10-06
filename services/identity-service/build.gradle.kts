@@ -24,8 +24,8 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-webmvc")
     implementation("org.flywaydb:flyway-database-postgresql")
-    // JWT signing (Nimbus + Spring JwtEncoder) without enabling Spring Security's web filters yet.
-    implementation("org.springframework.security:spring-security-oauth2-jose")
+    // Bearer-token auth for /me and /orgs; also brings Nimbus + Spring JwtEncoder for signing.
+    implementation("org.springframework.boot:spring-boot-starter-security-oauth2-resource-server")
     // bcrypt password hashing.
     implementation("org.springframework.security:spring-security-crypto")
     runtimeOnly("io.micrometer:micrometer-registry-prometheus")
@@ -35,6 +35,7 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-flyway-test")
     testImplementation("org.springframework.boot:spring-boot-starter-validation-test")
     testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
+    testImplementation("org.springframework.boot:spring-boot-starter-security-oauth2-resource-server-test")
     testImplementation("org.springframework.boot:spring-boot-resttestclient")
     testImplementation("org.springframework.boot:spring-boot-testcontainers")
     testImplementation("org.testcontainers:testcontainers-junit-jupiter")

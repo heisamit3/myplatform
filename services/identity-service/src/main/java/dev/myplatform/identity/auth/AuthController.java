@@ -37,6 +37,12 @@ class AuthController {
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(auth.refresh(request));
     }
 
+    /** Moves the session into another org the user belongs to: new token pair with the new org claim. */
+    @PostMapping("/switch-org")
+    ResponseEntity<TokenResponse> switchOrg(@Valid @RequestBody SwitchOrgRequest request) {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(auth.switchOrg(request));
+    }
+
     /** Always 204, also for unknown or already revoked tokens: logging out twice is not an error. */
     @PostMapping("/logout")
     @ResponseStatus(HttpStatus.NO_CONTENT)
