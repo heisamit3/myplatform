@@ -49,7 +49,8 @@ Decision (2026-10-06): native Windows + Git Bash, not WSL2. Project lives in `C:
 - [x] `infra/compose/compose.yaml` with postgres (pgvector image), redis and mailpit, all with memory limits and profiles
       2026-10-06: pgvector 0.8.7 / Postgres 18.6 (host 5433), redis 8.10.2, mailpit v1.31.4 (SMTP host 2525).
       `core` = postgres+redis, `events` = mailpit (Kafka/MongoDB join in Phase 3).
-- [ ] Postgres init script: separate database and user for identity-service
+- [x] Postgres init script: separate database and user for identity-service
+      `identity` role + DB (SCRAM password from `.env`); CONNECT revoked from PUBLIC on `identity` and `postgres`.
 - [ ] identity-service: Spring Boot project, Flyway, Actuator, `/health` `/ready` `/metrics`
 - [ ] Tables: users, organizations, memberships, refresh_tokens
 - [ ] Endpoints: register, login, refresh, logout, `GET /me`, create org, switch active org

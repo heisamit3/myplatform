@@ -14,6 +14,8 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in infra/compose/.env}
+      # Read by postgres/init/01-service-databases.sh (one DB + role per service).
+      IDENTITY_DB_PASSWORD: ${IDENTITY_DB_PASSWORD:?set IDENTITY_DB_PASSWORD in infra/compose/.env}
     # Small buffers so Postgres fits in 256M.
     command: ["postgres", "-c", "shared_buffers=64MB", "-c", "max_connections=50", "-c", "work_mem=2MB"]
     ports:
@@ -22,6 +24,8 @@ services:
     volumes:
       # Postgres 18 images keep data under /var/lib/postgresql/<major>/, so mount the parent.
       - pgdata:/var/lib/postgresql
+      # Init scripts run only on first start with an empty volume.
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
     mem_limit: 256m
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]

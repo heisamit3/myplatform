@@ -213,6 +213,9 @@ Assume I may be on my phone unless I say "I'm at the PC".
 - Host ports: postgres **5433** (a native Windows PostgreSQL 16 service holds 5432), redis 6379,
   mailpit SMTP **2525** (Windows won't bind 1025) and UI/API 8025. Inside compose use `postgres:5432`, `mailpit:1025`.
 - psql: `MSYS_NO_PATHCONV=1 docker exec -it myplatform-postgres-1 psql -U postgres`
+- Service DBs/roles: `infra/compose/postgres/init/01-service-databases.sh` runs only on an empty volume.
+  On an existing volume, re-run it: `MSYS_NO_PATHCONV=1 docker exec myplatform-postgres-1 bash /docker-entrypoint-initdb.d/01-service-databases.sh`
+  Inside the postgres container 127.0.0.1 is trusted (no password check). Test logins from another container on `myplatform_default`.
 - Stop everything: `docker compose -f infra/compose/compose.yaml down`
 - Start local K8s: `minikube start --driver=docker --kubernetes-version=v1.31.0 --memory=2560 --cpus=2`
 - Check K8s: `kubectl config current-context && kubectl get nodes`
