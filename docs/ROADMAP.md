@@ -98,7 +98,9 @@ Decision (2026-10-06): native Windows + Git Bash, not WSL2. Project lives in `C:
       2026-10-06: refresh token in an HttpOnly/Secure/SameSite=Strict cookie on `/auth`, set by the gateway
       (ADR 0008). `ApiClient`: token in memory, refresh on 401 + one retry, single-flight refresh, session resumed
       on reload. 14 web tests. curl replay with `Origin: localhost:5173`: register → login → reload → org → switch → logout.
-- [ ] Everything reachable through `localhost:8080` only (verify with curl remotely)
+- [x] Everything reachable through `localhost:8080` only (verify with curl remotely)
+      2026-10-06: identity-service has no host port anymore (`:8081` → connection refused). register → login →
+      `/me` → refresh all work on `:8080`. Postgres/Redis keep their 127.0.0.1 ports for dev tools.
 - [ ] 🖥️ Click through the UI in a browser: register → login → dashboard → switch org
 
 ## Phase 3: Events (weeks 6–7)

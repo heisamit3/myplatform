@@ -63,8 +63,9 @@ services:
       JWT_PRIVATE_KEY_PATH: /run/secrets/jwt-private-key
     secrets:
       - jwt-private-key
-    ports:
-      - "127.0.0.1:8081:8081"
+    # No host port: clients go through api-gateway on 8080. The gateway reaches identity-service:8081
+    # on the compose network. Debug directly with:
+    #   docker compose -f infra/compose/compose.yaml exec identity-service wget -qO- http://127.0.0.1:8081/health
     depends_on:
       postgres:
         condition: service_healthy

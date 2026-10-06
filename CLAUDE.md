@@ -208,11 +208,11 @@ Assume I may be on my phone unless I say "I'm at the PC".
 (Fill in as they get created.)
 
 - First time: `cp infra/compose/.env.example infra/compose/.env` and set `POSTGRES_PASSWORD`
-- Start core stack (postgres, redis, identity-service on 8081, api-gateway on 8080): `docker compose -f infra/compose/compose.yaml --profile core up -d`
-  Needs the JWT key (see below). Rebuild after code changes: `docker compose -f infra/compose/compose.yaml --profile core up -d --build identity-service`
-  To run the jar from the host instead, free port 8081 first: `docker compose -f infra/compose/compose.yaml stop identity-service`
+- Start core stack (postgres, redis, identity-service, api-gateway on **8080**): `docker compose -f infra/compose/compose.yaml --profile core up -d`
+  Needs the JWT key (see below). Rebuild after code changes: `docker compose -f infra/compose/compose.yaml --profile core up -d --build <service>`
+  Only the gateway has a host port (8080). identity-service (8081) is internal to the compose network.
 - Add the events profile: `docker compose -f infra/compose/compose.yaml --profile core --profile events up -d`
-- Host ports: postgres **5433** (a native Windows PostgreSQL 16 service holds 5432), redis 6379,
+- Host ports: gateway 8080, postgres **5433** (a native Windows PostgreSQL 16 service holds 5432), redis 6379,
   mailpit SMTP **2525** (Windows won't bind 1025) and UI/API 8025. Inside compose use `postgres:5432`, `mailpit:1025`.
 - psql: `MSYS_NO_PATHCONV=1 docker exec -it myplatform-postgres-1 psql -U postgres`
 - Service DBs/roles: `infra/compose/postgres/init/01-service-databases.sh` runs only on an empty volume.
@@ -220,26 +220,28 @@ Assume I may be on my phone unless I say "I'm at the PC".
   Inside the postgres container 127.0.0.1 is trusted (no password check). Test logins from another container on `myplatform_default`.
 - Stop everything: `docker compose -f infra/compose/compose.yaml down`
 - identity-service build + tests: `cd services/identity-service && ./gradlew build && ./gradlew --stop`
-- api-gateway build + tests (Testcontainers Redis, needs Docker): `cd services/api-gateway && ./gradlew build && ./gradlew --stop`
-  Rebuild the container: `docker compose -f infra/compose/compose.yaml --profile core up -d --build api-gateway`
-  (`--stop` frees the Gradle daemon's RAM. Tests need Docker for Testcontainers.)
+- api-gateway build + tests: `cd services/api-gateway && ./gradlew build && ./gradlew --stop`
+  (`--stop` frees the Gradle daemon's RAM. Tests need Docker for Testcontainers: Postgres / Redis.)
 - JWT signing key (once): `./scripts/gen-jwt-key.sh` → `infra/compose/secrets/jwt-private.pem` (gitignored)
-- identity-service run on the host (needs postgres up, the key, and port 8081 free), lighter than bootRun:
+- identity-service run on the host on 8081 (needs postgres up and the key), lighter than bootRun.
+  Stop the container first so only one copy runs: `docker compose -f infra/compose/compose.yaml stop identity-service`
   `DB_PASSWORD=$(grep '^IDENTITY_DB_PASSWORD=' infra/compose/.env | cut -d= -f2-) JWT_PRIVATE_KEY_PATH="$(pwd -W)/infra/compose/secrets/jwt-private.pem" java -Xmx256m -jar services/identity-service/build/libs/identity-service-0.0.1-SNAPSHOT.jar`
   (Without a key the app refuses to start; tests use an ephemeral key via `src/test/resources/config/application.yaml`.)
-- Register / login (identity-service on 8081):
-  `curl -s -H 'Content-Type: application/json' -d '{"email":"a@example.com","password":"correct horse battery","displayName":"A"}' localhost:8081/auth/register`
-  then the same with `{"email":...,"password":...}` to `/auth/login` → `accessToken`, `refreshToken`, `expiresIn`
-  `{"refreshToken":"..."}` to `/auth/refresh` (new pair) or `/auth/logout` (204)
-  Bearer endpoints: `curl -s -H "Authorization: Bearer $ACCESS" localhost:8081/me` · `POST /orgs {"name","slug"}`
-  · switch org: `POST /auth/switch-org {"refreshToken","orgId"}` → new pair with the `org` claim
-- Through the gateway (8080) the refresh token is an HttpOnly cookie, never in the body (ADR 0008). Use a cookie jar:
-  `curl -s -c jar -b jar -H 'Content-Type: application/json' -d '{"email":...,"password":...}' localhost:8080/auth/login`
-  then `curl -s -c jar -b jar -X POST localhost:8080/auth/refresh` (body optional). Login 10/min, register 5/min per IP.
-- OpenAPI: served at `localhost:8081/v3/api-docs.yaml`; committed copy `contracts/openapi/identity.yaml` is checked by a test.
+  The gateway on the host reaches it with its defaults (`IDENTITY_URI=http://localhost:8081`).
+- API through the gateway (8080). The refresh token is an HttpOnly cookie, never in a body (ADR 0008), so use a cookie jar:
+  `curl -s -H 'Content-Type: application/json' -d '{"email":"a@example.com","password":"correct horse battery","displayName":"A"}' localhost:8080/auth/register`
+  `curl -s -c jar -b jar -H 'Content-Type: application/json' -d '{"email":...,"password":...}' localhost:8080/auth/login` → `accessToken`, `expiresIn`
+  `curl -s -c jar -b jar -X POST localhost:8080/auth/refresh` (new access token, rotated cookie) · same for `/auth/logout` (204)
+  Bearer endpoints: `curl -s -H "Authorization: Bearer $ACCESS" localhost:8080/me` · `POST /orgs {"name","slug"}`
+  · switch org: `curl -s -c jar -b jar ... -d '{"orgId":"..."}' localhost:8080/auth/switch-org` → token with the `org` claim
+  Rate limits per IP: login 10/min, register 5/min (429). Reset locally:
+  `docker exec myplatform-redis-1 redis-cli --scan --pattern 'request_rate_limiter*' | xargs -r docker exec myplatform-redis-1 redis-cli del`
+  Directly against identity-service (host jar on 8081, JSON bodies): `refreshToken` is in the body and `/auth/refresh` takes `{"refreshToken":"..."}`.
+- OpenAPI: identity-service serves `/v3/api-docs.yaml` (not routed through the gateway); committed copy `contracts/openapi/identity.yaml` is checked by a test.
   After an API change: `cd services/identity-service && UPDATE_CONTRACTS=true ./gradlew test --tests '*OpenApiContractTests'`
   Lint: `npx -y @redocly/cli@latest lint contracts/openapi/identity.yaml`
-- Probes: `curl -s localhost:8081/health` · `/ready` · `/metrics` (full health: `/actuator/health`) · JWKS: `/.well-known/jwks.json`
+- Probes: gateway `curl -s localhost:8080/health` · `/ready` · `/metrics`. identity-service (internal):
+  `docker compose -f infra/compose/compose.yaml exec identity-service wget -qO- http://127.0.0.1:8081/ready` (also `/health`, `/metrics`, `/.well-known/jwks.json`)
 - web (needs the core stack for the API): `cd web && npm ci` once, then `npm run dev` (port 5173, strict; run it in the background)
   Checks: `npm test` · `npm run lint` · `npm run typecheck` · `npm run build`. API base URL: `VITE_API_URL` (default `http://localhost:8080`)
 - Start local K8s: `minikube start --driver=docker --kubernetes-version=v1.31.0 --memory=2560 --cpus=2`
