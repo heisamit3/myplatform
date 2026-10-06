@@ -1,5 +1,5 @@
 # Local dev stack. Start only what you need with profiles:
-#   docker compose -f infra/compose/compose.yaml --profile core up -d
+#   docker compose -f infra/compose/compose.yaml --profile core up -d      # postgres, redis, identity-service
 #   docker compose -f infra/compose/compose.yaml --profile core --profile events up -d
 # Every container has an explicit memory limit (8 GB host, see CLAUDE.md "Resource limits").
 # Ports bind to 127.0.0.1 only, so nothing is exposed to the LAN.
@@ -50,6 +50,35 @@ services:
       retries: 10
     restart: unless-stopped
 
+  identity-service:
+    build:
+      context: ../../services/identity-service
+    image: myplatform/identity-service:local
+    profiles: [core]
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/identity
+      DB_USER: identity
+      DB_PASSWORD: ${IDENTITY_DB_PASSWORD:?set IDENTITY_DB_PASSWORD in infra/compose/.env}
+      # Mounted from the secret below. Create it once with ./scripts/gen-jwt-key.sh.
+      JWT_PRIVATE_KEY_PATH: /run/secrets/jwt-private-key
+    secrets:
+      - jwt-private-key
+    ports:
+      - "127.0.0.1:8081:8081"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    # The image sets -XX:MaxRAMPercentage=75, so the heap follows this limit.
+    mem_limit: 384m
+    healthcheck:
+      # /ready includes the database (busybox wget is in the alpine image; there is no curl).
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8081/ready"]
+      interval: 10s
+      timeout: 3s
+      start_period: 40s
+      retries: 3
+    restart: unless-stopped
+
   mailpit:
     # Fake SMTP server with a web UI and REST API. notification-service sends email here.
     image: axllent/mailpit:v1.31.4
@@ -65,3 +94,8 @@ services:
 
 volumes:
   pgdata:
+
+secrets:
+  jwt-private-key:
+    # Gitignored. Compose bind-mounts it read-only at /run/secrets/jwt-private-key.
+    file: ./secrets/jwt-private.pem

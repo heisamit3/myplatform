@@ -45,6 +45,11 @@ dependencies {
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
+// Only the executable Spring Boot jar; the plain jar is never used.
+tasks.jar {
+    enabled = false
+}
+
 tasks.withType<Test> {
     useJUnitPlatform()
     maxHeapSize = "384m"

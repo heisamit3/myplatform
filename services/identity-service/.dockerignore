@@ -1,0 +1,5 @@
+# Only sources and the Gradle wrapper go into the build context.
+.gradle/
+build/
+*.iml
+.idea/
