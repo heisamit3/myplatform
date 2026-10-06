@@ -1,0 +1,36 @@
+{
+  "name": "notification-service",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24.6"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "start": "node dist/main.js",
+    "typecheck": "tsc --noEmit",
+    "lint": "oxlint src test",
+    "test": "vitest run",
+    "test:unit": "vitest run src"
+  },
+  "dependencies": {
+    "@nestjs/common": "^12.1.2",
+    "@nestjs/core": "^12.1.2",
+    "@nestjs/platform-express": "^12.1.2",
+    "mongodb": "^7.7.0",
+    "prom-client": "^15.1.3",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2"
+  },
+  "devDependencies": {
+    "@nestjs/testing": "^12.1.2",
+    "@testcontainers/mongodb": "^12.2.0",
+    "@types/express": "^5.0.0",
+    "@types/node": "^24.19.1",
+    "oxlint": "^1.87.0",
+    "testcontainers": "^12.2.0",
+    "typescript": "~6.0.3",
+    "vitest": "^5.0.3"
+  }
+}
