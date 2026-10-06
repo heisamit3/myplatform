@@ -5,7 +5,7 @@ import java.util.UUID;
 
 /**
  * In-process domain event: a user account was created. Published inside the registration transaction;
- * {@code events.DomainEventRelay} forwards it to Kafka only after that transaction commits.
+ * {@code events.DomainEventRecorder} writes it to the outbox in that same transaction (ADR 0014).
  */
 public record UserRegistered(UUID userId, String email, String displayName, Instant occurredAt) {
 

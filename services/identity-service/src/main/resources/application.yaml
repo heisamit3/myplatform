@@ -26,8 +26,12 @@ spring:
       # acks=all + idempotence are the Kafka client defaults.
       buffer-memory: 4MB
       properties:
-        # How long send() may wait for broker metadata. Sends run on a background thread (ADR 0011).
+        # Sends run on the outbox relay's scheduler thread inside a DB transaction (ADR 0014), so fail fast
+        # and let the relay retry: send() waits at most max.block.ms for broker metadata, and a record gives
+        # up after delivery.timeout.ms (15 s, default 120 s) instead of piling up behind a dead broker.
         max.block.ms: ${KAFKA_MAX_BLOCK_MS:10000}
+        request.timeout.ms: 10000
+        delivery.timeout.ms: 15000
 
 server:
   port: ${PORT:8081}
@@ -44,6 +48,12 @@ identity:
   events:
     # Topics are declared at startup (auto-create is off in the broker). 1 locally: single broker.
     replication-factor: ${KAFKA_REPLICATION_FACTOR:1}
+    outbox:
+      # Max delay between commit and send while healthy. Backs off to max-backoff while Kafka is down.
+      poll-interval: ${OUTBOX_POLL_INTERVAL:500ms}
+      # Safety net above delivery.timeout.ms: normally the producer reports the failure first.
+      send-timeout: 20s
+      retention: ${OUTBOX_RETENTION:7d}
 
 springdoc:
   # Spec at /v3/api-docs(.yaml); exported to contracts/openapi/identity.yaml by OpenApiContractTests.

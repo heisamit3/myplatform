@@ -26,7 +26,7 @@ class SchemaMigrationTests {
     void migrationIsApplied() {
         String version = db.sql("SELECT max(version) FROM flyway_schema_history WHERE success")
                 .query(String.class).single();
-        assertThat(version).isEqualTo("1");
+        assertThat(version).isEqualTo("2");
     }
 
     // One expected failure per test: Postgres aborts the transaction after the first error.

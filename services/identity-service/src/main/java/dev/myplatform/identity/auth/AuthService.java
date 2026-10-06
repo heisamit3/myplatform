@@ -52,7 +52,7 @@ class AuthService {
         this.dummyHash = passwordEncoder.encode(RefreshTokenService.generate());
     }
 
-    // Transactional so UserRegistered is relayed to Kafka only after the insert commits.
+    // Transactional: the user row and its outbox event (written by a synchronous listener) commit together.
     @Transactional
     UserResponse register(RegisterRequest request) {
         String email = Emails.normalize(request.email());
