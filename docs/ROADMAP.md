@@ -78,6 +78,7 @@ Decision (2026-10-06): native Windows + Git Bash, not WSL2. Project lives in `C:
       2026-10-06: JDK 21 noble build stage (Gradle, BuildKit cache) → Temurin 21.0.12.1 JRE alpine, UID 10001,
       Spring Boot layers (app layer 61 kB, image 275 MB). Compose: JWT key as a compose secret, waits for postgres,
       `/ready` healthcheck. Under load (100 logins + 300 `/me`): 300 MiB of 384 MiB, 0 restarts.
+      Heap cap lowered from 75% to 40% of the limit (ADR 0005).
 
 ## Phase 2: Gateway + frontend (weeks 4–5)
 

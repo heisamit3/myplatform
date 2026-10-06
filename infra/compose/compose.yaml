@@ -68,7 +68,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    # The image sets -XX:MaxRAMPercentage=75, so the heap follows this limit.
+    # The image sets -XX:MaxRAMPercentage=40 (ADR 0005): heap cap ~154 MiB of this limit.
     mem_limit: 384m
     healthcheck:
       # /ready includes the database (busybox wget is in the alpine image; there is no curl).

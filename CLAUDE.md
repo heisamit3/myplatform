@@ -118,7 +118,7 @@ infra/terraform/aws/       # VPC, EKS, IAM, etc.
   uses WSL2's default limit (about 3.7 GB). Assume about 3.2 GB is usable for containers.
 - Every container gets an explicit memory limit. Default budgets:
   postgres 256M · redis 64M · mongodb 384M (`--wiredTigerCacheSizeGB 0.25`) · kafka 768M (heap 512M) ·
-  mailpit 64M · each Spring service 384M (`-XX:MaxRAMPercentage=75`) · Node service 192M.
+  mailpit 64M · each Spring service 384M (`-XX:MaxRAMPercentage=40`, ADR 0005) · Node service 192M.
 - Use **docker compose profiles** so I can start only what I'm working on
   (e.g. `core` = postgres+redis+identity, `events` = kafka+notification+mongodb).
 - Don't run Compose and minikube at the same time. Local K8s runs a minimal set;

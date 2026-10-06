@@ -27,8 +27,8 @@ COPY --from=build /src/extracted/spring-boot-loader/ ./
 COPY --from=build /src/extracted/snapshot-dependencies/ ./
 COPY --from=build /src/extracted/application/ ./
 USER 10001:10001
-# Heap = 75% of the container memory limit (CLAUDE.md). Exit on OOM so the orchestrator restarts us
-# instead of running half-broken.
-ENV JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=75 -XX:+ExitOnOutOfMemoryError"
+# Heap = 40% of the container limit (ADR 0005): metaspace, code cache and native memory need the rest.
+# Exit on OOM so the orchestrator restarts us instead of running half-broken.
+ENV JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=40 -XX:+ExitOnOutOfMemoryError"
 EXPOSE 8081
 ENTRYPOINT ["java", "-jar", "application.jar"]
