@@ -12,12 +12,13 @@ import org.springframework.boot.webtestclient.autoconfigure.AutoConfigureWebTest
 import org.springframework.context.annotation.Import;
 
 /**
- * Full gateway on a random port, routing to {@link FakeIdentityService}, with a {@code WebTestClient}.
+ * Full gateway on a random port, routing to {@link FakeIdentityService}, with a Testcontainers Redis
+ * and a {@code WebTestClient}.
  * All HTTP tests use this one annotation so Spring reuses a single context.
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-@Import(FakeIdentityConfiguration.class)
+@Import({ FakeIdentityConfiguration.class, TestcontainersConfiguration.class })
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @AutoConfigureWebTestClient
 @AutoConfigureMetrics // tests disable metric exporters by default; /metrics needs the Prometheus one

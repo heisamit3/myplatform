@@ -24,7 +24,7 @@ with the matching Spring Cloud release train.
   validate again (defense in depth), with no trusted "X-User-Id" headers.
 - **CORS lives in Spring Security**, not in the gateway's `globalcors`. Security's CORS filter runs before
   authentication, so preflights get answered and 401s carry CORS headers the app can read.
-  Credentials are allowed (the refresh-token cookie, see the next ADR). Origins come from `CORS_ALLOWED_ORIGINS`.
+  Credentials are allowed (the refresh-token cookie, ADR 0008). Origins come from `CORS_ALLOWED_ORIGINS`.
 - **Readiness doesn't include downstream services:** one slow service must not pull the whole edge out of
   rotation.
 

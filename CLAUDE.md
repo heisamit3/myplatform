@@ -220,7 +220,7 @@ Assume I may be on my phone unless I say "I'm at the PC".
   Inside the postgres container 127.0.0.1 is trusted (no password check). Test logins from another container on `myplatform_default`.
 - Stop everything: `docker compose -f infra/compose/compose.yaml down`
 - identity-service build + tests: `cd services/identity-service && ./gradlew build && ./gradlew --stop`
-- api-gateway build + tests (no Docker needed): `cd services/api-gateway && ./gradlew build && ./gradlew --stop`
+- api-gateway build + tests (Testcontainers Redis, needs Docker): `cd services/api-gateway && ./gradlew build && ./gradlew --stop`
   Rebuild the container: `docker compose -f infra/compose/compose.yaml --profile core up -d --build api-gateway`
   (`--stop` frees the Gradle daemon's RAM. Tests need Docker for Testcontainers.)
 - JWT signing key (once): `./scripts/gen-jwt-key.sh` → `infra/compose/secrets/jwt-private.pem` (gitignored)

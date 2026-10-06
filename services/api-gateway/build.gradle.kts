@@ -26,10 +26,14 @@ dependencies {
     implementation("org.springframework.cloud:spring-cloud-starter-gateway-server-webflux")
     // Validates access tokens against identity-service's JWKS.
     implementation("org.springframework.boot:spring-boot-starter-security-oauth2-resource-server")
+    // Rate-limit counters (token buckets) shared by all gateway replicas.
+    implementation("org.springframework.boot:spring-boot-starter-data-redis-reactive")
     runtimeOnly("io.micrometer:micrometer-registry-prometheus")
     testImplementation("org.springframework.boot:spring-boot-starter-actuator-test")
     testImplementation("org.springframework.boot:spring-boot-starter-security-oauth2-resource-server-test")
     testImplementation("org.springframework.boot:spring-boot-webtestclient")
+    testImplementation("org.springframework.boot:spring-boot-testcontainers")
+    testImplementation("org.testcontainers:testcontainers-junit-jupiter")
     testImplementation("io.projectreactor:reactor-test")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }

@@ -87,7 +87,10 @@ Decision (2026-10-06): native Windows + Git Bash, not WSL2. Project lives in `C:
       Routes `/auth/**` (public), `/me`, `/orgs/**` (JWT: JWKS signature, exp, iss). 401 = problem+json.
       CORS for `localhost:5173` with credentials. 14 tests (fake identity on a JDK HttpServer). Compose `core`,
       176 MiB of 384 MiB after start.
-- [ ] Redis-backed rate limiting on login/register
+- [x] Redis-backed rate limiting on login/register
+      2026-10-06: `RequestRateLimiter` token buckets per client IP (ADR 0007): login 10/min, register 5/min,
+      429 + `X-RateLimit-*`. Fails open without Redis. `RATE_LIMIT_TRUSTED_PROXIES` for X-Forwarded-For
+      behind Traefik (Phase 5). 21 gateway tests (Testcontainers Redis). curl: 11th login → 429.
 - [ ] web: React + Vite + TS. Pages: register, login, dashboard, profile, org switcher
 - [ ] Token handling: short-lived access token in memory, refresh flow
 - [ ] Everything reachable through `localhost:8080` only (verify with curl remotely)
