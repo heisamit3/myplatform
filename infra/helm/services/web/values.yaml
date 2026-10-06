@@ -1,0 +1,30 @@
+# web: the built React app served by nginx (unprivileged image: UID 101, port 8080).
+port: 8080
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 101
+  runAsGroup: 101
+  # null removes the default fsGroup (Helm merges maps; nginx mounts no Secrets).
+  fsGroup: null
+  seccompProfile: { type: RuntimeDefault }
+
+# Static files only: nginx needs very little.
+resources:
+  requests: { cpu: 20m, memory: 32Mi }
+  limits: { memory: 32Mi }
+
+# nginx answers /health and /ready itself (web/nginx.conf); it starts in well under a second.
+probes:
+  startup: { path: /health, periodSeconds: 2, failureThreshold: 15 }
+  liveness: { path: /health, periodSeconds: 10, timeoutSeconds: 3, failureThreshold: 3 }
+  readiness: { path: /ready, periodSeconds: 5, timeoutSeconds: 3, failureThreshold: 3 }
+
+metrics:
+  enabled: false
+
+# Everything that isn't an API path (the API routes are longer matches, so they win).
+route:
+  enabled: true
+  paths:
+    - { type: PathPrefix, value: / }

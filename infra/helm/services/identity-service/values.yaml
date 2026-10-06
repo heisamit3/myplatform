@@ -1,0 +1,22 @@
+# identity-service: settings shared by every environment. Environment specifics: values-<env>.yaml.
+# Needs Secrets identity-db {password} and identity-jwt {private.pem} (local: scripts/k8s-local-secrets.sh).
+port: 8081
+
+env:
+  # "postgres" = the Postgres Service in the same namespace.
+  DB_URL: jdbc:postgresql://postgres:5432/identity
+  DB_USER: identity
+  JWT_PRIVATE_KEY_PATH: /etc/identity/jwt/private.pem
+  # Without Kafka in the cluster, registration still works; events wait in the outbox (ADR 0014).
+  KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+
+secretEnv:
+  DB_PASSWORD: { secret: identity-db, key: password }
+
+secretFiles:
+  - { name: jwt, secret: identity-jwt, mountPath: /etc/identity/jwt }
+
+# Heap = 40% of the limit via the image's JAVA_TOOL_OPTIONS (ADR 0005).
+resources:
+  requests: { cpu: 250m, memory: 384Mi }
+  limits: { memory: 384Mi }

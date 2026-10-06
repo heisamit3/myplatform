@@ -176,7 +176,12 @@ Decision (2026-10-06): native Windows + Git Bash, not WSL2. Project lives in `C:
       the pod being deleted and recreated. Redis = Deployment (no persistence, so nothing for a StatefulSet to keep).
       minikube container: 1.44 of 2.5 GiB with postgres + redis + identity-service.
 - [ ] Write a short note in `docs/` explaining each object in my own words (interview prep)
-- [ ] Convert to one shared Helm chart used by all services + `values-local.yaml`
+- [x] Convert to one shared Helm chart used by all services + `values-local.yaml`
+      2026-10-06: `infra/helm/service` (Deployment, Service, ConfigMap, optional HTTPRoute), one release per service,
+      values in `infra/helm/services/<svc>/values.yaml` + `values-local.yaml` (ADR 0016). identity-service moved from
+      raw YAML to Helm (raw kept in `infra/k8s/raw/reference/`); api-gateway and web deployed too; notification-service
+      validated with `helm template` only (needs Kafka/MongoDB: AWS). Gotcha found: K8s service-link env vars
+      (`REDIS_PORT=tcp://...`) crashed the gateway → `enableServiceLinks: false` in the chart.
 - [ ] Expose the gateway and web with Gateway API (Traefik)
 - [ ] Prometheus + Grafana (lightweight setup) with one dashboard: requests, errors, latency, JVM memory
 

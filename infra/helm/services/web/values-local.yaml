@@ -1,0 +1,5 @@
+# minikube: the image is built locally and loaded with ./scripts/minikube-load.sh (never pulled).
+image:
+  repository: myplatform/web
+  tag: local
+  pullPolicy: Never

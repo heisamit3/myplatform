@@ -1,0 +1,24 @@
+# notification-service: settings shared by every environment. Environment specifics: values-<env>.yaml.
+# Needs Kafka, MongoDB and an SMTP server in the cluster, so it isn't deployed in minikube (RAM):
+# it runs with the full stack on AWS (Phase 7). Validate locally with `helm template`.
+# Needs Secret notification-db {uri} (mongodb://notification:<password>@mongodb:27017/notification).
+port: 8082
+
+env:
+  KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+  SMTP_HOST: mailpit
+  SMTP_PORT: "1025"
+
+secretEnv:
+  MONGODB_URI: { secret: notification-db, key: uri }
+
+# The image caps the V8 heap at 96 MB; librdkafka's buffers live outside it (ADR 0012).
+resources:
+  requests: { cpu: 100m, memory: 192Mi }
+  limits: { memory: 192Mi }
+
+# Node starts in seconds: a shorter startup window than the JVM default.
+probes:
+  startup: { path: /health, periodSeconds: 2, failureThreshold: 30 }
+  liveness: { path: /health, periodSeconds: 10, timeoutSeconds: 3, failureThreshold: 3 }
+  readiness: { path: /ready, periodSeconds: 5, timeoutSeconds: 3, failureThreshold: 3 }

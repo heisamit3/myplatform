@@ -1,0 +1,72 @@
+# Defaults shared by all services. Each service overrides them in infra/helm/services/<name>/values.yaml,
+# and each environment in values-<env>.yaml next to it (ADR 0016). Install one release per service:
+#   helm upgrade --install identity-service infra/helm/service -n myplatform \
+#     -f infra/helm/services/identity-service/values.yaml -f infra/helm/services/identity-service/values-local.yaml
+
+image:
+  repository: ""   # required
+  tag: ""          # required: a commit SHA in CI-built environments, "local" in minikube
+  # IfNotPresent: pull only if the node doesn't have it yet. Never: the image must already be on the node (minikube).
+  pullPolicy: IfNotPresent
+
+replicas: 1
+
+# Container port, named "http". The Service exposes the same port number.
+port: 8080
+
+# Non-secret settings as environment variables (12-factor). Rendered into a ConfigMap.
+env: {}
+
+# Environment variables from Secret keys:  NAME: { secret: <secret name>, key: <key> }
+secretEnv: {}
+
+# Secrets mounted as read-only files:  - { name: jwt, secret: identity-jwt, mountPath: /etc/identity/jwt }
+secretFiles: []
+
+# Requests = what the scheduler reserves on a node; limits = hard cap (over the memory limit = OOM-killed).
+# Memory request = limit: the pod never relies on memory the node may not have. No CPU limit: throttling
+# slows JVM startup a lot, and the CPU request already guarantees a fair share.
+resources:
+  requests: { cpu: 100m, memory: 256Mi }
+  limits: { memory: 256Mi }
+
+# Every service exposes /health (liveness: process only) and /ready (readiness: dependencies) (CLAUDE.md).
+probes:
+  # Holds off liveness/readiness until the app has answered once. 5 s x 36 = up to 3 min for a JVM start.
+  startup: { path: /health, periodSeconds: 5, failureThreshold: 36 }
+  # Failing = restart the container.
+  liveness: { path: /health, periodSeconds: 10, timeoutSeconds: 3, failureThreshold: 3 }
+  # Failing = take the pod out of the Service (no traffic), no restart.
+  readiness: { path: /ready, periodSeconds: 5, timeoutSeconds: 3, failureThreshold: 3 }
+
+# Prometheus scrapes pods that carry the prometheus.io/* annotations.
+metrics:
+  enabled: true
+  path: /metrics
+
+# Numeric user from the Dockerfile: runAsNonRoot can only verify a numeric UID.
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 10001
+  runAsGroup: 10001
+  # Mounted Secret files get this group, so the app user can read them (mode 0440).
+  fsGroup: 10001
+  seccompProfile: { type: RuntimeDefault }
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities: { drop: ["ALL"] }
+
+# Writable /tmp on the read-only root filesystem (embedded Tomcat, nginx temp files).
+tmpDir:
+  enabled: true
+  sizeLimit: 64Mi
+
+# Gateway API HTTPRoute: which request paths the edge (Traefik) sends to this service.
+route:
+  enabled: false
+  # The Gateway (infra/k8s/raw/gateway.yaml) in the release namespace.
+  gateway: myplatform
+  # - { type: PathPrefix, value: /auth }   (types: PathPrefix, Exact). The longest match wins across routes.
+  paths: []

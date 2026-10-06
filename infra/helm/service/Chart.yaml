@@ -1,0 +1,6 @@
+apiVersion: v2
+name: service
+description: Shared chart for every myplatform service (one Helm release per service, ADR 0016)
+type: application
+# Chart version: bump when templates change. appVersion is unused: the image tag comes from values.
+version: 0.1.1

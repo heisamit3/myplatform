@@ -1,0 +1,10 @@
+# minikube (not deployed by default, see values.yaml): locally built image, never pulled.
+image:
+  repository: myplatform/notification-service
+  tag: local
+  pullPolicy: Never
+
+# Merged over values.yaml (Helm merges maps key by key).
+env:
+  # Link in the welcome email: the app through the Traefik port-forward.
+  WEB_URL: http://localhost:8088

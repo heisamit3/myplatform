@@ -1,0 +1,10 @@
+# minikube: the image is built locally and loaded with ./scripts/minikube-load.sh (never pulled).
+image:
+  repository: myplatform/api-gateway
+  tag: local
+  pullPolicy: Never
+
+# Merged over values.yaml (Helm merges maps key by key).
+env:
+  # The web app is served from the same origin (port-forward to Traefik), so CORS isn't used; keep it exact anyway.
+  CORS_ALLOWED_ORIGINS: http://localhost:8088
