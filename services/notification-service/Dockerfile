@@ -29,6 +29,8 @@ FROM ${NODE_IMAGE}
 RUN addgroup -S -g 10001 app && adduser -S -D -H -u 10001 -G app app
 WORKDIR /app
 ENV NODE_ENV=production
+# Plain log lines: no ANSI color codes in `docker logs` or a log collector (Nest honors NO_COLOR).
+ENV NO_COLOR=1
 # Dependencies change less often than code, so they come first and stay cached.
 COPY --from=deps /src/node_modules ./node_modules
 COPY package.json ./
