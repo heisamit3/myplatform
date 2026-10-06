@@ -219,9 +219,11 @@ Assume I may be on my phone unless I say "I'm at the PC".
 - Stop everything: `docker compose -f infra/compose/compose.yaml down`
 - identity-service build + tests: `cd services/identity-service && ./gradlew build && ./gradlew --stop`
   (`--stop` frees the Gradle daemon's RAM. Tests need Docker for Testcontainers.)
-- identity-service run (needs `core` up), lighter than bootRun:
-  `DB_PASSWORD=$(grep '^IDENTITY_DB_PASSWORD=' infra/compose/.env | cut -d= -f2-) java -Xmx256m -jar services/identity-service/build/libs/identity-service-0.0.1-SNAPSHOT.jar`
-- Probes: `curl -s localhost:8081/health` · `/ready` · `/metrics` (full health: `/actuator/health`)
+- JWT signing key (once): `./scripts/gen-jwt-key.sh` → `infra/compose/secrets/jwt-private.pem` (gitignored)
+- identity-service run (needs `core` up and the key), lighter than bootRun:
+  `DB_PASSWORD=$(grep '^IDENTITY_DB_PASSWORD=' infra/compose/.env | cut -d= -f2-) JWT_PRIVATE_KEY_PATH="$(pwd -W)/infra/compose/secrets/jwt-private.pem" java -Xmx256m -jar services/identity-service/build/libs/identity-service-0.0.1-SNAPSHOT.jar`
+  (Without a key the app refuses to start; tests use an ephemeral key via `src/test/resources/config/application.yaml`.)
+- Probes: `curl -s localhost:8081/health` · `/ready` · `/metrics` (full health: `/actuator/health`) · JWKS: `/.well-known/jwks.json`
 - Start local K8s: `minikube start --driver=docker --kubernetes-version=v1.31.0 --memory=2560 --cpus=2`
 - Check K8s: `kubectl config current-context && kubectl get nodes`
 - Stop local K8s (frees RAM, keeps the cluster): `minikube stop`

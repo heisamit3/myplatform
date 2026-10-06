@@ -57,7 +57,9 @@ Decision (2026-10-06): native Windows + Git Bash, not WSL2. Project lives in `C:
 - [x] Tables: users, organizations, memberships, refresh_tokens
       Flyway `V1__identity_schema.sql` (ADR 0002), 6 schema tests on Testcontainers, applied to the compose DB.
 - [ ] Endpoints: register, login, refresh, logout, `GET /me`, create org, switch active org
-- [ ] RS256 key pair + `/.well-known/jwks.json`
+- [x] RS256 key pair + `/.well-known/jwks.json`
+      PKCS#8 key from `JWT_PRIVATE_KEY_PATH` (no key → startup fails), kid = RFC 7638 thumbprint,
+      `AccessTokenIssuer` (sub/org/roles, 15 min, iss `http://identity-service`). 20 tests green.
 - [ ] OpenAPI spec exported to `contracts/openapi/identity.yaml`
 - [ ] Unit tests + Testcontainers integration test for register/login
 - [ ] Dockerfile (multi-stage, non-root), added to the compose `core` profile

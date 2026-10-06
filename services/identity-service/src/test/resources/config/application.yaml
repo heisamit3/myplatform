@@ -1,0 +1,4 @@
+# Test-only overrides. Files in classpath:/config/ are layered on top of src/main/resources/application.yaml.
+identity:
+  jwt:
+    allow-ephemeral-key: true

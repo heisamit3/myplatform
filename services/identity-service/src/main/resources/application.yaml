@@ -18,6 +18,14 @@ spring:
 server:
   port: ${PORT:8081}
 
+identity:
+  jwt:
+    # PKCS#8 PEM RSA key. Local: scripts/gen-jwt-key.sh. Kubernetes: mounted Secret. Startup fails without it.
+    private-key-path: ${JWT_PRIVATE_KEY_PATH:}
+    # Must be a URL (Spring Security parses iss as one). The service's DNS name in compose and Kubernetes.
+    issuer: ${JWT_ISSUER:http://identity-service}
+    access-token-ttl: ${JWT_ACCESS_TOKEN_TTL:15m}
+
 management:
   endpoints:
     web:
