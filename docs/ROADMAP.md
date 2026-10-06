@@ -121,8 +121,16 @@ Decision (2026-10-06): native Windows + Git Bash, not WSL2. Project lives in `C:
       key = userId, topic declared by the service (3 partitions). ADR 0011. `UserRegisteredEventTests` validates the
       real event (Testcontainers Kafka) against `contracts/events/`. 75 tests. Compose: register → event on the topic;
       with Kafka stopped, register still 201 in ~0.4 s (event logged as lost; outbox fixes that).
-- [ ] notification-service (NestJS): consumes it idempotently, stores history in MongoDB, sends a welcome email to Mailpit
-- [ ] Verify: register through the API, then the email appears in Mailpit (check via Mailpit's API with curl)
+- [x] notification-service (NestJS): consumes it idempotently, stores history in MongoDB, sends a welcome email to Mailpit
+      2026-10-06: Nest 12 (ESM), TS 6 strict, Vitest, oxlint. Kafka client `@confluentinc/kafka-javascript` 1.10
+      (librdkafka 2.15; kafkajs is unmaintained, ADR 0012). Unique index `{eventId, template}`, pending → sent,
+      Message-ID from eventId; poison messages skipped, SMTP/Mongo errors back off 1–30 s and redeliver (ADR 0013).
+      31 tests (25 unit, 6 Testcontainers with Kafka 4.3.1 / MongoDB 8.0 / Mailpit). Image node 24.21 alpine,
+      UID 10001, 227 MB. Compose `events`: 52 of 192 MiB.
+- [x] Verify: register through the API, then the email appears in Mailpit (check via Mailpit's API with curl)
+      2026-10-06: register → 201 → Mailpit has 1 email with Message-ID `<eventId>.welcome@...`. Replaying the whole
+      topic (offsets reset to earliest) → `duplicate, ignored` for every event, still the same number of emails. Mailpit stopped
+      during a registration → `EDNS` failure, retry, sent once Mailpit was back (`attempts: 2`, 1 email).
 - [ ] Stretch: transactional outbox in identity-service
 
 ## Phase 4: CI with GitHub Actions (week 8)

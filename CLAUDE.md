@@ -252,6 +252,14 @@ Assume I may be on my phone unless I say "I'm at the PC".
 - web (needs the core stack for the API): `cd web && npm ci` once, then `npm run dev` (port 5173, strict; run it in the background)
   Checks: `npm test` · `npm run lint` · `npm run typecheck` · `npm run build`. API base URL: `VITE_API_URL` (default `http://localhost:8080`)
 - Event schemas (`contracts/events/`): `./scripts/check-event-schemas.sh` (compile, `examples/` valid, `invalid/` rejected)
+- notification-service (NestJS, events profile, no host port): `cd services/notification-service && npm ci` once, then
+  `npm test` (unit + Testcontainers: Kafka, MongoDB, Mailpit; `npm run test:unit` = no Docker) · `npm run lint` · `npm run typecheck` · `npm run build`
+  Probes: `docker compose -f infra/compose/compose.yaml exec notification-service wget -qO- http://127.0.0.1:8082/ready` (also `/health`, `/metrics`)
+  On the host (stop the container first): `MONGODB_URI=mongodb://notification:<pw>@localhost:27017/notification npm start` (defaults: Kafka localhost:9094, SMTP localhost:2525)
+- Welcome email check: register via `:8080/auth/register`, then `curl -s "http://localhost:8025/api/v1/search?query=to:<email>"` (Mailpit API)
+- Replay a topic (idempotency check): stop notification-service, then
+  `MSYS_NO_PATHCONV=1 docker exec -e KAFKA_HEAP_OPTS=-Xmx64m myplatform-kafka-1 /opt/kafka/bin/kafka-consumer-groups.sh --bootstrap-server localhost:9092 --group notification-service --topic identity.user.registered.v1 --reset-offsets --to-earliest --execute`
+  and start it again: the logs show `duplicate, ignored` and no new emails. (`-Xmx64m` keeps the CLI JVM inside Kafka's memory limit.)
 - Start local K8s: `minikube start --driver=docker --kubernetes-version=v1.31.0 --memory=2560 --cpus=2`
 - Check K8s: `kubectl config current-context && kubectl get nodes`
 - Stop local K8s (frees RAM, keeps the cluster): `minikube stop`
