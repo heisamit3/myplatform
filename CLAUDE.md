@@ -218,7 +218,8 @@ Assume I may be on my phone unless I say "I'm at the PC".
 - Service DBs/roles: `infra/compose/postgres/init/01-service-databases.sh` runs only on an empty volume.
   On an existing volume, re-run it: `MSYS_NO_PATHCONV=1 docker exec myplatform-postgres-1 bash /docker-entrypoint-initdb.d/01-service-databases.sh`
   Inside the postgres container 127.0.0.1 is trusted (no password check). Test logins from another container on `myplatform_default`.
-- Stop everything: `docker compose -f infra/compose/compose.yaml down`
+- Stop everything: `docker compose -f infra/compose/compose.yaml --profile core --profile events down`
+  (Without the profiles, `down` leaves profiled services running. The data volume is kept; `-v` would delete it.)
 - identity-service build + tests: `cd services/identity-service && ./gradlew build && ./gradlew --stop`
 - api-gateway build + tests: `cd services/api-gateway && ./gradlew build && ./gradlew --stop`
   (`--stop` frees the Gradle daemon's RAM. Tests need Docker for Testcontainers: Postgres / Redis.)
