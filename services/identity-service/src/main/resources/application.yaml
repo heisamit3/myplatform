@@ -32,6 +32,12 @@ identity:
   refresh-token:
     ttl: ${REFRESH_TOKEN_TTL:7d}
 
+springdoc:
+  # Spec at /v3/api-docs(.yaml); exported to contracts/openapi/identity.yaml by OpenApiContractTests.
+  default-produces-media-type: application/json
+  # Stable key order, so the exported file only changes when the API does.
+  writer-with-order-by-keys: true
+
 management:
   endpoints:
     web:

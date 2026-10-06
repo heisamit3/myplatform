@@ -28,6 +28,8 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-security-oauth2-resource-server")
     // bcrypt password hashing.
     implementation("org.springframework.security:spring-security-crypto")
+    // OpenAPI spec generated from the controllers; exported to contracts/openapi/ by a test.
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-api:3.1.1")
     runtimeOnly("io.micrometer:micrometer-registry-prometheus")
     runtimeOnly("org.postgresql:postgresql")
     testImplementation("org.springframework.boot:spring-boot-starter-actuator-test")
@@ -46,4 +48,7 @@ dependencies {
 tasks.withType<Test> {
     useJUnitPlatform()
     maxHeapSize = "384m"
+    // OpenApiContractTests compares against this folder, so editing it must re-run the tests.
+    inputs.files("../../contracts/openapi").withPropertyName("contracts")
+    inputs.property("updateContracts", System.getenv("UPDATE_CONTRACTS") ?: "")
 }

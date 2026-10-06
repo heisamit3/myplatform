@@ -1,17 +1,21 @@
 package dev.myplatform.identity.security;
 
+import java.nio.charset.StandardCharsets;
 import java.security.interfaces.RSAPublicKey;
 
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.RSAKey;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.MediaType;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
+import org.springframework.security.oauth2.server.resource.web.BearerTokenAuthenticationEntryPoint;
+import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 
 import dev.myplatform.identity.token.JwtProperties;
@@ -26,17 +30,35 @@ class SecurityConfiguration {
     @Bean
     SecurityFilterChain api(HttpSecurity http) throws Exception {
         http.authorizeHttpRequests(requests -> requests
-                        .requestMatchers("/auth/**", "/.well-known/jwks.json").permitAll()
+                        .requestMatchers("/auth/**", "/.well-known/jwks.json", "/v3/api-docs/**", "/v3/api-docs.yaml").permitAll()
                         .requestMatchers("/health", "/ready", "/metrics", "/actuator/health/**").permitAll()
                         // Error responses of public endpoints must not turn into 401s.
                         .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated())
-                .oauth2ResourceServer(server -> server.jwt(Customizer.withDefaults()))
+                .oauth2ResourceServer(server -> server
+                        .jwt(Customizer.withDefaults())
+                        .authenticationEntryPoint(problemDetailEntryPoint()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 // CSRF attacks ride on cookies the browser sends automatically. A Bearer header is never
                 // sent automatically, so CSRF protection only gets in the way here.
                 .csrf(csrf -> csrf.disable());
         return http.build();
+    }
+
+    /**
+     * 401 as problem+json like every other error. The Bearer entry point still sets the status and the
+     * WWW-Authenticate header (RFC 6750), e.g. {@code error="invalid_token"}.
+     */
+    private static AuthenticationEntryPoint problemDetailEntryPoint() {
+        BearerTokenAuthenticationEntryPoint bearer = new BearerTokenAuthenticationEntryPoint();
+        byte[] body = """
+                {"type":"about:blank","title":"Unauthorized","status":401,"detail":"Missing or invalid access token"}"""
+                .getBytes(StandardCharsets.UTF_8);
+        return (request, response, exception) -> {
+            bearer.commence(request, response, exception);
+            response.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);
+            response.getOutputStream().write(body);
+        };
     }
 
     /**

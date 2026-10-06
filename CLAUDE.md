@@ -229,6 +229,9 @@ Assume I may be on my phone unless I say "I'm at the PC".
   `{"refreshToken":"..."}` to `/auth/refresh` (new pair) or `/auth/logout` (204)
   Bearer endpoints: `curl -s -H "Authorization: Bearer $ACCESS" localhost:8081/me` · `POST /orgs {"name","slug"}`
   · switch org: `POST /auth/switch-org {"refreshToken","orgId"}` → new pair with the `org` claim
+- OpenAPI: served at `localhost:8081/v3/api-docs.yaml`; committed copy `contracts/openapi/identity.yaml` is checked by a test.
+  After an API change: `cd services/identity-service && UPDATE_CONTRACTS=true ./gradlew test --tests '*OpenApiContractTests'`
+  Lint: `npx -y @redocly/cli@latest lint contracts/openapi/identity.yaml`
 - Probes: `curl -s localhost:8081/health` · `/ready` · `/metrics` (full health: `/actuator/health`) · JWKS: `/.well-known/jwks.json`
 - Start local K8s: `minikube start --driver=docker --kubernetes-version=v1.31.0 --memory=2560 --cpus=2`
 - Check K8s: `kubectl config current-context && kubectl get nodes`

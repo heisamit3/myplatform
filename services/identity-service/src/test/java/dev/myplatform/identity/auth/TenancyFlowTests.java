@@ -43,7 +43,10 @@ class TenancyFlowTests {
 
     @Test
     void protectedEndpointsNeedAValidAccessToken() throws Exception {
-        http.get().uri("/me").exchange().expectStatus().isUnauthorized();
+        http.get().uri("/me").exchange().expectStatus().isUnauthorized()
+                .expectHeader().contentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .expectHeader().valueMatches("WWW-Authenticate", "Bearer.*")
+                .expectBody().jsonPath("$.detail").isEqualTo("Missing or invalid access token");
         http.get().uri("/me").header("Authorization", "Bearer not-a-jwt").exchange()
                 .expectStatus().isUnauthorized();
         http.post().uri("/orgs").contentType(MediaType.APPLICATION_JSON)

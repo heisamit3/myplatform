@@ -67,7 +67,9 @@ Decision (2026-10-06): native Windows + Git Bash, not WSL2. Project lives in `C:
 - [x] RS256 key pair + `/.well-known/jwks.json`
       PKCS#8 key from `JWT_PRIVATE_KEY_PATH` (no key → startup fails), kid = RFC 7638 thumbprint,
       `AccessTokenIssuer` (sub/org/roles, 15 min, iss `http://identity-service`). 20 tests green.
-- [ ] OpenAPI spec exported to `contracts/openapi/identity.yaml`
+- [x] OpenAPI spec exported to `contracts/openapi/identity.yaml`
+      2026-10-06: code-first with springdoc 3.1.1 (ADR 0004). `OpenApiContractTests` fails on drift;
+      all errors are problem+json (incl. the 401 from Spring Security). `redocly lint`: valid, 3 accepted warnings.
 - [ ] Unit tests + Testcontainers integration test for register/login
       2026-10-06: integration tests done (`AuthFlowTests` 6, `RefreshFlowTests` 7, `TenancyFlowTests` 5). Unit tests still to add.
 - [ ] Dockerfile (multi-stage, non-root), added to the compose `core` profile

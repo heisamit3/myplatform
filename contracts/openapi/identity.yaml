@@ -1,0 +1,447 @@
+# GENERATED from identity-service code by OpenApiContractTests. Do not edit by hand.
+# Regenerate: cd services/identity-service && UPDATE_CONTRACTS=true ./gradlew test --tests '*OpenApiContractTests'
+openapi: 3.1.0
+info:
+  description: "Users, organizations (tenants), memberships, login and tokens."
+  title: identity-service
+  version: v1
+servers:
+- description: "Local, direct. Clients use the gateway."
+  url: http://localhost:8081
+tags:
+- description: "Register, log in, and manage sessions (refresh tokens)"
+  name: auth
+- description: Public keys for verifying access tokens
+  name: keys
+- description: The signed-in user
+  name: me
+- description: Organizations (tenants)
+  name: organizations
+paths:
+  /.well-known/jwks.json:
+    get:
+      operationId: getJwks
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: OK
+      security: []
+      summary: JSON Web Key Set (RFC 7517) with the RS256 signing key
+      tags:
+      - keys
+  /auth/login:
+    post:
+      operationId: login
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenResponse"
+          description: Access token (15 min) and refresh token (7 days)
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+          description: Missing email or password
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+          description: Invalid email or password
+      security: []
+      summary: Log in; starts a new session in the first org the user joined
+      tags:
+      - auth
+  /auth/logout:
+    post:
+      operationId: logout
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefreshTokenRequest"
+        required: true
+      responses:
+        "204":
+          description: Session ended (also for unknown or revoked tokens)
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+          description: Missing refresh token
+      security: []
+      summary: End the session the refresh token belongs to (idempotent)
+      tags:
+      - auth
+  /auth/refresh:
+    post:
+      description: The presented refresh token is revoked. Presenting it again revokes
+        the whole session.
+      operationId: refreshTokens
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefreshTokenRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenResponse"
+          description: New access and refresh token
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+          description: Missing refresh token
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+          description: "Unknown, expired, revoked or reused refresh token"
+      security: []
+      summary: Trade a refresh token for a new token pair (rotation)
+      tags:
+      - auth
+  /auth/register:
+    post:
+      operationId: register
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserResponse"
+          description: Account created; log in to get tokens
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+          description: "Invalid email, password or display name"
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+          description: Email is already registered
+      security: []
+      summary: Create a user account (no org yet)
+      tags:
+      - auth
+  /auth/switch-org:
+    post:
+      description: Rotates the refresh token like /auth/refresh; the new access token
+        carries the org.
+      operationId: switchOrg
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SwitchOrgRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenResponse"
+          description: New token pair for the target org
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+          description: Missing refresh token or org id
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+          description: "Unknown, expired, revoked or reused refresh token"
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+          description: Not a member of this organization (or it doesn't exist)
+      security: []
+      summary: Move the session into another org of the user
+      tags:
+      - auth
+  /me:
+    get:
+      operationId: getMe
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MeResponse"
+          description: The signed-in user
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+          description: Missing or invalid access token
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+          description: The account was deleted after the token was issued
+      security:
+      - bearerAuth: []
+      summary: "The caller's profile, active org and all their orgs"
+      tags:
+      - me
+  /orgs:
+    post:
+      description: "The caller's session doesn't move into it automatically: call\
+        \ /auth/switch-org."
+      operationId: createOrg
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateOrgRequest"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrgResponse"
+          description: Organization created
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+          description: Invalid name or slug
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+          description: Missing or invalid access token
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+          description: Organization slug is already taken
+      security:
+      - bearerAuth: []
+      summary: Create an organization; the caller becomes its OWNER
+      tags:
+      - organizations
+components:
+  schemas:
+    CreateOrgRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 100
+          minLength: 0
+        slug:
+          type: string
+          maxLength: 63
+          minLength: 0
+          pattern: "^[a-z0-9]+(-[a-z0-9]+)*$"
+      required:
+      - name
+      - slug
+    LoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          minLength: 1
+        password:
+          type: string
+      required:
+      - email
+      - password
+    MeResponse:
+      type: object
+      properties:
+        activeOrgId:
+          type:
+          - string
+          - "null"
+          format: uuid
+          description: Org of the current access token; null until the user has one
+        displayName:
+          type: string
+        email:
+          type: string
+        id:
+          type: string
+          format: uuid
+        organizations:
+          type: array
+          description: "All orgs of the user, oldest membership first"
+          items:
+            $ref: "#/components/schemas/OrgResponse"
+      required:
+      - activeOrgId
+      - displayName
+      - email
+      - id
+      - organizations
+    OrgResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        role:
+          type: string
+          enum:
+          - OWNER
+          - ADMIN
+          - MEMBER
+        slug:
+          type: string
+      required:
+      - id
+      - name
+      - role
+      - slug
+    ProblemDetail:
+      type: object
+      description: RFC 9457 problem details
+      properties:
+        detail:
+          type: string
+          example: Email is already registered
+        instance:
+          type: string
+          format: uri-reference
+          example: /auth/register
+        status:
+          type: integer
+          format: int32
+          example: 409
+        title:
+          type: string
+          example: Conflict
+        type:
+          type: string
+          format: uri-reference
+          example: about:blank
+      required:
+      - status
+      - title
+      - type
+    RefreshTokenRequest:
+      type: object
+      properties:
+        refreshToken:
+          type: string
+          minLength: 1
+      required:
+      - refreshToken
+    RegisterRequest:
+      type: object
+      properties:
+        displayName:
+          type: string
+          maxLength: 100
+          minLength: 0
+        email:
+          type: string
+          format: email
+          maxLength: 254
+          minLength: 0
+        password:
+          type: string
+          description: "8 to 72 characters, at most 72 bytes in UTF-8"
+          maxLength: 72
+          minLength: 8
+      required:
+      - displayName
+      - email
+      - password
+    SwitchOrgRequest:
+      type: object
+      properties:
+        orgId:
+          type: string
+          format: uuid
+        refreshToken:
+          type: string
+          minLength: 1
+      required:
+      - orgId
+      - refreshToken
+    TokenResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+          description: "RS256 JWT with sub (user), org (active org, if any) and roles"
+        expiresIn:
+          type: integer
+          format: int64
+          description: Access-token lifetime in seconds
+          example: 900
+        refreshToken:
+          type: string
+          description: "Opaque, single-use: every refresh returns a new one"
+        tokenType:
+          type: string
+          example: Bearer
+      required:
+      - accessToken
+      - expiresIn
+      - refreshToken
+      - tokenType
+    UserResponse:
+      type: object
+      properties:
+        displayName:
+          type: string
+        email:
+          type: string
+        id:
+          type: string
+          format: uuid
+      required:
+      - displayName
+      - email
+      - id
+  securitySchemes:
+    bearerAuth:
+      bearerFormat: JWT
+      scheme: bearer
+      type: http
