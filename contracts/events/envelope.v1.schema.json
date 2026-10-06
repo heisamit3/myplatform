@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/heisamit3/myplatform/contracts/events/envelope.v1.schema.json",
+  "title": "Event envelope v1",
+  "description": "Wrapper for every Kafka event. The topic is `<type>.v<version>`. Consumers dedupe on eventId.",
+  "type": "object",
+  "required": ["eventId", "type", "version", "occurredAt", "orgId", "payload"],
+  "additionalProperties": false,
+  "properties": {
+    "eventId": {
+      "description": "Unique per event. Redelivered copies keep the same eventId.",
+      "type": "string",
+      "format": "uuid"
+    },
+    "type": {
+      "description": "<service>.<entity>.<event>, past tense, without the version.",
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*\\.[a-z][a-z0-9-]*\\.[a-z][a-z0-9-]*$",
+      "examples": ["identity.user.registered"]
+    },
+    "version": {
+      "description": "Payload schema version. A breaking change means a new version and a new topic.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "occurredAt": {
+      "description": "When the fact happened, ISO-8601 in UTC.",
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$"
+    },
+    "orgId": {
+      "description": "Tenant the event belongs to. null for events that are about a user, not an org.",
+      "type": ["string", "null"],
+      "format": "uuid"
+    },
+    "payload": {
+      "description": "Event-specific data, defined by the schema for <type> v<version>.",
+      "type": "object"
+    }
+  }
+}

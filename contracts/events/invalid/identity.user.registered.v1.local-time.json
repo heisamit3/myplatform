@@ -1,0 +1,8 @@
+{
+  "eventId": "0199b9a8-6f3e-7c41-9d2a-5b8e1f0c3a77",
+  "type": "identity.user.registered",
+  "version": 1,
+  "occurredAt": "2026-10-06T15:30:00+02:00",
+  "orgId": null,
+  "payload": { "userId": "0199b9a8-6f3a-7e10-8b6c-2d4f9a1e7c55", "email": "a@example.com", "displayName": "A" }
+}

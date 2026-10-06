@@ -112,7 +112,10 @@ Decision (2026-10-06): native Windows + Git Bash, not WSL2. Project lives in `C:
       2026-10-06: `apache/kafka:4.3.1` (broker+controller, `kafka:9092` inside, `localhost:9094` from the host,
       auto-create off) + `mongo:8.0.32` (`notification` user, readWrite on its own DB only). ADR 0009.
       Produce/consume round trip OK. Idle: Kafka 391 of 768 MiB, MongoDB 201 of 384 MiB.
-- [ ] Event envelope JSON Schema in `contracts/events/`
+- [x] Event envelope JSON Schema in `contracts/events/`
+      2026-10-06: `envelope.v1` + `identity.user.registered.v1` (draft 2020-12, ADR 0010). Strict for producers,
+      `orgId` nullable for user-level events. `./scripts/check-event-schemas.sh`: schemas compile, example valid,
+      2 invalid cases rejected (extra `passwordHash`, non-UTC time).
 - [ ] identity-service publishes `identity.user.registered.v1`
 - [ ] notification-service (NestJS): consumes it idempotently, stores history in MongoDB, sends a welcome email to Mailpit
 - [ ] Verify: register through the API, then the email appears in Mailpit (check via Mailpit's API with curl)

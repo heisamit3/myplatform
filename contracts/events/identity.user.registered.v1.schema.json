@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/heisamit3/myplatform/contracts/events/identity.user.registered.v1.schema.json",
+  "title": "identity.user.registered v1",
+  "description": "A user account was created. Topic: identity.user.registered.v1. Published by identity-service.",
+  "$ref": "envelope.v1.schema.json",
+  "type": "object",
+  "properties": {
+    "type": { "const": "identity.user.registered" },
+    "version": { "const": 1 },
+    "orgId": { "description": "Always null: registration does not create an org.", "type": "null" },
+    "payload": {
+      "type": "object",
+      "required": ["userId", "email", "displayName"],
+      "additionalProperties": false,
+      "properties": {
+        "userId": { "type": "string", "format": "uuid" },
+        "email": { "description": "Lower-case.", "type": "string", "format": "email" },
+        "displayName": { "type": "string", "minLength": 1, "maxLength": 100 }
+      }
+    }
+  }
+}
