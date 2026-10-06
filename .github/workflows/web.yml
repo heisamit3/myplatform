@@ -6,17 +6,18 @@ on:
     paths: &paths
       - web/**
       - .github/workflows/web.yml
+      - .github/workflows/_build-image.yml
   pull_request:
     paths: *paths
   workflow_dispatch:
 
 permissions: {}
 
+# A newer commit on the same PR cancels the older run; runs on main always finish (each SHA gets an image).
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
-# No image yet: the frontend gets one when it is deployed to Kubernetes (Phase 5).
 jobs:
   check:
     runs-on: ubuntu-24.04
@@ -40,3 +41,14 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+
+  # nginx image with the built app (web/Dockerfile), same-origin API (ADR 0017).
+  image:
+    needs: check
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/_build-image.yml
+    with:
+      service: web
+      context: web

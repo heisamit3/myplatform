@@ -28,6 +28,8 @@ Claude Code adds items here when they can't be done remotely. Clear this list wh
       → Package settings → Change visibility → Public) for identity-service, api-gateway, notification-service,
       so minikube/EKS can pull without a pull secret.
 - [ ] `gh auth refresh -s read:packages` (browser login) so Claude Code can list GHCR images/tags from the CLI.
+- [ ] Phase 5 UI click-through in Kubernetes (K8s session): `kubectl -n traefik port-forward svc/traefik 8088:80`, open
+      http://localhost:8088 → register → create org → switch → reload (stays logged in) → log out.
 - [ ] Phase 2 UI click-through: `docker compose -f infra/compose/compose.yaml --profile core up -d`, then
       `cd web && npm run dev`, open http://localhost:5173 → register → (lands on dashboard) → create an org →
       create a second org → switch with the header dropdown → Profile → reload the page (should stay logged in) → Log out.
@@ -182,7 +184,12 @@ Decision (2026-10-06): native Windows + Git Bash, not WSL2. Project lives in `C:
       raw YAML to Helm (raw kept in `infra/k8s/raw/reference/`); api-gateway and web deployed too; notification-service
       validated with `helm template` only (needs Kafka/MongoDB: AWS). Gotcha found: K8s service-link env vars
       (`REDIS_PORT=tcp://...`) crashed the gateway → `enableServiceLinks: false` in the chart.
-- [ ] Expose the gateway and web with Gateway API (Traefik)
+- [x] Expose the gateway and web with Gateway API (Traefik)
+      2026-10-06: Gateway API CRDs v1.6.1 + Traefik 3.7.13 (chart 41.6.1, Gateway API provider only), our Gateway
+      `myplatform`, HTTPRoutes from the chart. One origin (ADR 0017): `/auth`, `/me`, `/orgs` → api-gateway, the rest →
+      web. web image: nginx-unprivileged 1.30.5, 60 MB, ~10 MiB RAM, built with `VITE_API_URL=""`; CI builds/pushes it.
+      Port-forward `localhost:8088`: SPA deep links 200, register → login (cookie) → `/me` → `POST /orgs` → refresh OK,
+      spoofed `X-Forwarded-For` doesn't escape the login limit.
 - [ ] Prometheus + Grafana (lightweight setup) with one dashboard: requests, errors, latency, JVM memory
 
 ## Phase 6: GitOps with Argo CD (week 12)

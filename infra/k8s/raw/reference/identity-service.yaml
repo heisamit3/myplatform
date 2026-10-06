@@ -1,4 +1,5 @@
-# identity-service, hand-written (learning phase; replaced by the shared Helm chart later in Phase 5).
+# REFERENCE ONLY (not applied): the hand-written first version of identity-service, kept for learning.
+# Deployed with the shared Helm chart now (infra/helm/service, ADR 0016).
 # Needs (created by scripts/k8s-local-secrets.sh, never committed): Secret identity-db {password},
 # Secret identity-jwt {private.pem}. Image loaded with ./scripts/minikube-load.sh.
 

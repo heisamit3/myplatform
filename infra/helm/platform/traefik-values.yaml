@@ -1,0 +1,44 @@
+# Traefik = the Gateway API implementation at the edge (ADR 0017). Chart traefik/traefik, version pinned in
+# scripts/k8s-local-platform.sh. Only the Gateway API provider is on: no Ingress, no Traefik-specific CRDs.
+providers:
+  kubernetesGateway:
+    enabled: true
+  kubernetesIngress:
+    enabled: false
+  kubernetesCRD:
+    enabled: false
+
+# GatewayClass "traefik" = "Traefik implements Gateways of this class". The Gateway itself is ours
+# (infra/k8s/raw/gateway.yaml), next to the app's HTTPRoutes.
+gatewayClass:
+  enabled: true
+  name: traefik
+gateway:
+  enabled: false
+ingressClass:
+  enabled: false
+
+service:
+  spec:
+    # Local: reached through `kubectl port-forward` (a LoadBalancer would need `minikube tunnel`, which needs admin
+    # on Windows). On AWS this becomes a LoadBalancer (and must be deleted before terraform destroy).
+    type: ClusterIP
+
+ports:
+  # Entry point "web" listens on 8000 in the pod; the Gateway's listener uses the same port number.
+  web:
+    port: 8000
+  websecure:
+    expose:
+      default: false
+
+deployment:
+  podAnnotations:
+    # Edge request metrics (entry point + service labels) for Prometheus.
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9100"
+    prometheus.io/path: /metrics
+
+resources:
+  requests: { cpu: 50m, memory: 64Mi }
+  limits: { memory: 128Mi }

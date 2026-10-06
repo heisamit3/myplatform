@@ -271,9 +271,16 @@ Assume I may be on my phone unless I say "I'm at the PC".
 - Start local K8s: `minikube start --driver=docker --kubernetes-version=v1.31.0 --memory=2560 --cpus=2`
 - Check K8s: `kubectl config current-context && kubectl get nodes`
 - Load an image into minikube: `./scripts/minikube-load.sh myplatform/identity-service:local` (check: `minikube image ls | grep myplatform`)
-- Local K8s stack (raw YAML, namespace `myplatform`): `./scripts/k8s-local-secrets.sh` (Secrets from `.env` + JWT key)
-  → `kubectl apply -f infra/k8s/raw/` → `kubectl -n myplatform get pods`. Images must be loaded first (above).
-  Test: `kubectl -n myplatform port-forward svc/identity-service 18081:8081` (background), then curl `localhost:18081`.
+- Local K8s stack (namespace `myplatform`), in this order (all idempotent):
+  1. images: `docker build -t myplatform/<svc>:local services/<svc>` (web: `web`) → `./scripts/minikube-load.sh myplatform/<svc>:local ...`
+  2. `./scripts/k8s-local-platform.sh` (Gateway API CRDs + Traefik; add `--monitoring` for Prometheus + Grafana)
+  3. `./scripts/k8s-local-secrets.sh` (Secrets from `.env` + JWT key) → `kubectl apply -f infra/k8s/raw/` (postgres, redis, Gateway)
+  4. `./scripts/k8s-local-deploy.sh [svc...]` (Helm, shared chart `infra/helm/service`, default: identity-service api-gateway web)
+  After a code change: rebuild + load the image, then `kubectl -n myplatform rollout restart deploy/<svc>` (same `local` tag).
+  App through the edge: `kubectl -n traefik port-forward svc/traefik 8088:80` (background) → `http://localhost:8088`
+  (web at `/`, API at `/auth`, `/me`, `/orgs`; same curl commands as on 8080). Render without a cluster:
+  `helm template <svc> infra/helm/service -f infra/helm/services/<svc>/values.yaml -f infra/helm/services/<svc>/values-local.yaml`
+  Releases: `helm list -A` · history/rollback: `helm -n myplatform history <svc>` / `helm -n myplatform rollback <svc> <rev>`
   psql: `MSYS_NO_PATHCONV=1 kubectl -n myplatform exec -it postgres-0 -- psql -U postgres -d identity`
   Fresh DB: `kubectl -n myplatform delete statefulset postgres && kubectl -n myplatform delete pvc data-postgres-0`
 - Stop local K8s (frees RAM, keeps the cluster): `minikube stop`

@@ -7,9 +7,13 @@ on:
   workflow_call:
     inputs:
       service:
-        description: Directory under services/ (also the image name)
+        description: Image name; also the directory under services/ unless context is set
         type: string
         required: true
+      context:
+        description: Build context (default services/<service>)
+        type: string
+        default: ""
 
 permissions: {}
 
@@ -51,7 +55,7 @@ jobs:
       - name: Build${{ env.PUSH == 'true' && ' and push' || '' }}
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
-          context: services/${{ inputs.service }}
+          context: ${{ inputs.context || format('services/{0}', inputs.service) }}
           push: ${{ env.PUSH == 'true' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

@@ -1,0 +1,21 @@
+# The app's entry point. A Gateway is "a listener the edge proxy opens"; Traefik implements it (GatewayClass
+# traefik). Each service attaches its paths with an HTTPRoute (rendered by the Helm chart, route.paths).
+# Needs the Gateway API CRDs and Traefik first: ./scripts/k8s-local-platform.sh
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: myplatform
+  namespace: myplatform
+  labels:
+    app.kubernetes.io/part-of: myplatform
+spec:
+  gatewayClassName: traefik
+  listeners:
+    - name: web
+      protocol: HTTP
+      # Must match Traefik's "web" entry point port (infra/helm/platform/traefik-values.yaml).
+      port: 8000
+      allowedRoutes:
+        namespaces:
+          # Only HTTPRoutes from this namespace can attach.
+          from: Same
