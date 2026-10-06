@@ -61,7 +61,7 @@ services:
       DB_PASSWORD: ${IDENTITY_DB_PASSWORD:?set IDENTITY_DB_PASSWORD in infra/compose/.env}
       # Mounted from the secret below. Create it once with ./scripts/gen-jwt-key.sh.
       JWT_PRIVATE_KEY_PATH: /run/secrets/jwt-private-key
-      # Only reachable with the events profile. Without it, registration still works; events are logged as lost.
+      # Only reachable with the events profile. Without it, registration still works; events wait in the outbox (ADR 0014).
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     secrets:
       - jwt-private-key

@@ -1,6 +1,6 @@
 # 0011: identity-service publishes events after commit (best effort, outbox later)
 
-Date: 2026-10-06 · Status: accepted
+Date: 2026-10-06 · Status: delivery superseded by ADR 0014 (transactional outbox); JSON-as-String, record keys and topic declaration still apply
 
 ## Context
 

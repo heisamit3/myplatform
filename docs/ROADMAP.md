@@ -131,7 +131,13 @@ Decision (2026-10-06): native Windows + Git Bash, not WSL2. Project lives in `C:
       2026-10-06: register → 201 → Mailpit has 1 email with Message-ID `<eventId>.welcome@...`. Replaying the whole
       topic (offsets reset to earliest) → `duplicate, ignored` for every event, still the same number of emails. Mailpit stopped
       during a registration → `EDNS` failure, retry, sent once Mailpit was back (`attempts: 2`, 1 email).
-- [ ] Stretch: transactional outbox in identity-service
+- [x] Stretch: transactional outbox in identity-service
+      2026-10-06: Flyway V2 `outbox_events`. A synchronous listener writes the envelope in the registration
+      transaction (`MANDATORY`). `OutboxRelay` polls every 500 ms under a Postgres advisory lock (one relay
+      across replicas), sends in id order, stops at the first failure, backs off 0.5 → 30 s, and deletes
+      published rows after 7 days. Metrics `identity_outbox_pending` / `_published_total` / `_failures_total`. ADR 0014.
+      86 tests (8 relay unit, 5 outbox integration). Compose: Kafka stopped → register 201 in 0.3 s → row pending
+      (7 attempts, backing off) → Kafka started → published → welcome email in Mailpit. Commit → Kafka 170–580 ms.
 
 ## Phase 4: CI with GitHub Actions (week 8)
 
