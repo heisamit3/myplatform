@@ -1,5 +1,11 @@
 # myplatform
 
+[![identity-service](https://github.com/heisamit3/myplatform/actions/workflows/identity-service.yml/badge.svg?branch=main)](https://github.com/heisamit3/myplatform/actions/workflows/identity-service.yml)
+[![api-gateway](https://github.com/heisamit3/myplatform/actions/workflows/api-gateway.yml/badge.svg?branch=main)](https://github.com/heisamit3/myplatform/actions/workflows/api-gateway.yml)
+[![notification-service](https://github.com/heisamit3/myplatform/actions/workflows/notification-service.yml/badge.svg?branch=main)](https://github.com/heisamit3/myplatform/actions/workflows/notification-service.yml)
+[![web](https://github.com/heisamit3/myplatform/actions/workflows/web.yml/badge.svg?branch=main)](https://github.com/heisamit3/myplatform/actions/workflows/web.yml)
+[![contracts](https://github.com/heisamit3/myplatform/actions/workflows/contracts.yml/badge.svg?branch=main)](https://github.com/heisamit3/myplatform/actions/workflows/contracts.yml)
+
 A domain-agnostic, multi-tenant microservices platform built as a portfolio project:
 Spring Boot, NestJS and FastAPI services behind a Spring Cloud Gateway, Kafka events,
 Kubernetes (minikube → EKS), GitOps with Argo CD, and Terraform.

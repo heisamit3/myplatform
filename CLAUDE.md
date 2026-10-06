@@ -263,6 +263,10 @@ Assume I may be on my phone unless I say "I'm at the PC".
 - Replay a topic (idempotency check): stop notification-service, then
   `MSYS_NO_PATHCONV=1 docker exec -e KAFKA_HEAP_OPTS=-Xmx64m myplatform-kafka-1 /opt/kafka/bin/kafka-consumer-groups.sh --bootstrap-server localhost:9092 --group notification-service --topic identity.user.registered.v1 --reset-offsets --to-earliest --execute`
   and start it again: the logs show `duplicate, ignored` and no new emails. (`-Xmx64m` keeps the CLI JVM inside Kafka's memory limit.)
+- CI (ADR 0015): lint workflows before pushing:
+  `MSYS_NO_PATHCONV=1 docker run --rm -m 256m -v "$(pwd -W):/repo" --workdir /repo rhysd/actionlint:1.7.12`
+  Runs: `gh run list --limit 10` · `gh run watch <id> --exit-status` · failed logs: `gh run view <id> --log-failed`
+  Manual run: `gh workflow run <service>.yml` · images: `ghcr.io/heisamit3/myplatform/<service>:<full commit SHA>` (main only)
 - Start local K8s: `minikube start --driver=docker --kubernetes-version=v1.31.0 --memory=2560 --cpus=2`
 - Check K8s: `kubectl config current-context && kubectl get nodes`
 - Stop local K8s (frees RAM, keeps the cluster): `minikube stop`
