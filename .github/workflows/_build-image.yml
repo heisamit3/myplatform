@@ -72,7 +72,8 @@ jobs:
 
   # GitOps (ADR 0019): record the new image in Git; Argo CD notices the commit and deploys it.
   # CI never talks to a cluster. Pushes made with GITHUB_TOKEN don't start new workflow runs ([skip ci] is a
-  # second guard).
+  # second guard). Gotcha: GitHub skips a push whose message contains that marker anywhere, even in prose,
+  # so human commit messages must not quote it.
   bump-tag:
     needs: image
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
