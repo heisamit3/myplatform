@@ -136,7 +136,8 @@ infra/terraform/aws/       # VPC, EKS, IAM, etc.
 
 - **local-compose:** daily development.
 - **local-k8s:** minikube (docker driver), for learning and testing manifests/Helm/Argo CD.
-  - Load locally built images with `minikube image load <image>` instead of pushing to a registry.
+  - Load locally built images with `./scripts/minikube-load.sh <image>` instead of pushing to a registry.
+    (`minikube image load` is broken in 1.34 on this Windows build: it calls `wmic`, which Windows removed.)
   - Don't use minikube's `ingress` addon (it's ingress-nginx). Use Gateway API + Traefik as decided above.
   - Before any `kubectl` write command, confirm `kubectl config current-context` is `minikube`.
     This matters once an EKS context exists.
@@ -269,5 +270,6 @@ Assume I may be on my phone unless I say "I'm at the PC".
   Manual run: `gh workflow run <service>.yml` · images: `ghcr.io/heisamit3/myplatform/<service>:<full commit SHA>` (main only)
 - Start local K8s: `minikube start --driver=docker --kubernetes-version=v1.31.0 --memory=2560 --cpus=2`
 - Check K8s: `kubectl config current-context && kubectl get nodes`
+- Load an image into minikube: `./scripts/minikube-load.sh myplatform/identity-service:local` (check: `minikube image ls | grep myplatform`)
 - Stop local K8s (frees RAM, keeps the cluster): `minikube stop`
 - Memory check: `./scripts/mem.sh` (Windows free RAM, Docker VM size, per-container usage)

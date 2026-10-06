@@ -21,9 +21,9 @@ Claude Code adds items here when they can't be done remotely. Clear this list wh
       Then open a new Git Bash and run `gh auth login`.
 - [x] Approve the `.claude/settings.json` update (Claude Code may not edit its own permissions): allow `./scripts/mem.sh`
       instead of `free -h`, plus `winget list:*` / `winget search:*`; deny `wsl --shutdown:*` and `shutdown:*`.
-- [ ] minikube warned "Failing to connect to https://registry.k8s.io/ from inside the minikube container".
-      The cluster started anyway (images were cached). Before Phase 5, test pulls with
-      `minikube ssh -- curl -sI https://registry.k8s.io`. Cloudflare WARP is a likely suspect.
+- [x] minikube warned "Failing to connect to https://registry.k8s.io/ from inside the minikube container".
+      2026-10-06: false alarm. From inside minikube, registry.k8s.io / Docker Hub / ghcr.io all answer, and a real
+      `docker pull` of a registry.k8s.io image works. The warning still shows on every start; ignore it.
 - [ ] GHCR packages are private by default. Make each public (GitHub → profile → Packages → `myplatform/<service>`
       → Package settings → Change visibility → Public) for identity-service, api-gateway, notification-service,
       so minikube/EKS can pull without a pull secret.
@@ -160,8 +160,11 @@ Decision (2026-10-06): native Windows + Git Bash, not WSL2. Project lives in `C:
 
 ## Phase 5: Kubernetes locally (weeks 9–11)
 
-- [ ] Turn off Compose, `minikube start` (command in CLAUDE.md)
-- [ ] Load images with `minikube image load` (no registry needed locally)
+- [x] Turn off Compose, `minikube start` (command in CLAUDE.md)
+      2026-10-06: Windows 1.8 GB free before start; minikube container 776 MiB idle.
+- [x] Load images with `minikube image load` (no registry needed locally)
+      2026-10-06: `minikube image load` fails in 1.34 on this Windows build (`exec: "wmic": executable file not found`).
+      Workaround: `./scripts/minikube-load.sh <image>` = `docker save | docker load` into minikube's daemon (docker-env).
 - [ ] Hand-write raw YAML for identity-service: Deployment, Service, ConfigMap, Secret, probes, resource limits
 - [ ] Postgres + Redis in the cluster (StatefulSet + PersistentVolumeClaim)
 - [ ] Write a short note in `docs/` explaining each object in my own words (interview prep)
