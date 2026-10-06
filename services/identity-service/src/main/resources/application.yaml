@@ -65,6 +65,12 @@ springdoc:
   writer-with-order-by-keys: true
 
 management:
+  metrics:
+    distribution:
+      # A few fixed latency buckets, so Prometheus can compute percentiles (p95) per route with
+      # histogram_quantile(). Far fewer series than a full histogram. The brackets keep the dotted meter name one key.
+      slo:
+        "[http.server.requests]": 25ms,50ms,100ms,250ms,500ms,1s,2s
   endpoints:
     web:
       # Actuator lives at the root so Prometheus can scrape /metrics.

@@ -91,6 +91,12 @@ gateway:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
 
 management:
+  metrics:
+    distribution:
+      # A few fixed latency buckets, so Prometheus can compute percentiles (p95) per route with
+      # histogram_quantile(). Far fewer series than a full histogram. The brackets keep the dotted meter name one key.
+      slo:
+        "[http.server.requests]": 25ms,50ms,100ms,250ms,500ms,1s,2s
   endpoints:
     web:
       # Same layout as the services: /health, /ready, /metrics at the root.
