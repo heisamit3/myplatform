@@ -212,6 +212,10 @@ Assume I may be on my phone unless I say "I'm at the PC".
   Needs the JWT key (see below). Rebuild after code changes: `docker compose -f infra/compose/compose.yaml --profile core up -d --build <service>`
   Only the gateway has a host port (8080). identity-service (8081) is internal to the compose network.
 - Add the events profile: `docker compose -f infra/compose/compose.yaml --profile core --profile events up -d`
+- Kafka: containers use `kafka:9092`, host tools use `localhost:9094`. Topics aren't auto-created. CLI example:
+  `MSYS_NO_PATHCONV=1 docker exec myplatform-kafka-1 /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list`
+- mongosh: `MSYS_NO_PATHCONV=1 docker exec -it myplatform-mongodb-1 sh -c 'mongosh -u root -p "$MONGO_INITDB_ROOT_PASSWORD"'`
+  (service user: `mongodb://notification:<NOTIFICATION_DB_PASSWORD>@mongodb:27017/notification`; host port 27017)
 - Host ports: gateway 8080, postgres **5433** (a native Windows PostgreSQL 16 service holds 5432), redis 6379,
   mailpit SMTP **2525** (Windows won't bind 1025) and UI/API 8025. Inside compose use `postgres:5432`, `mailpit:1025`.
 - psql: `MSYS_NO_PATHCONV=1 docker exec -it myplatform-postgres-1 psql -U postgres`

@@ -108,7 +108,10 @@ Decision (2026-10-06): native Windows + Git Bash, not WSL2. Project lives in `C:
 
 ## Phase 3: Events (weeks 6–7)
 
-- [ ] Kafka (KRaft, single broker, heap 512M) + MongoDB in an `events` compose profile
+- [x] Kafka (KRaft, single broker, heap 512M) + MongoDB in an `events` compose profile
+      2026-10-06: `apache/kafka:4.3.1` (broker+controller, `kafka:9092` inside, `localhost:9094` from the host,
+      auto-create off) + `mongo:8.0.32` (`notification` user, readWrite on its own DB only). ADR 0009.
+      Produce/consume round trip OK. Idle: Kafka 391 of 768 MiB, MongoDB 201 of 384 MiB.
 - [ ] Event envelope JSON Schema in `contracts/events/`
 - [ ] identity-service publishes `identity.user.registered.v1`
 - [ ] notification-service (NestJS): consumes it idempotently, stores history in MongoDB, sends a welcome email to Mailpit

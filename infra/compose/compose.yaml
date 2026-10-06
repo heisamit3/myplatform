@@ -122,8 +122,75 @@ services:
     mem_limit: 64m
     restart: unless-stopped
 
+  kafka:
+    # Official Apache image. KRaft mode: this one node is both broker and controller (no ZooKeeper).
+    image: apache/kafka:4.3.1
+    profiles: [events]
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      # Fixed ID (base64 of "myplatform-local") so the data volume survives `down`/`up`.
+      CLUSTER_ID: bXlwbGF0Zm9ybS1sb2NhbA
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      # PLAINTEXT = containers (kafka:9092), EXTERNAL = host tools (localhost:9094), CONTROLLER = KRaft quorum.
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,EXTERNAL://localhost:9094
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      # Single broker: internal topics can't have more than one replica.
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      # Topics are declared by the producing service, so a typo in a consumer can't create one.
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+      KAFKA_HEAP_OPTS: -Xms256m -Xmx512m
+    ports:
+      - "127.0.0.1:9094:9094"
+    volumes:
+      - kafkadata:/var/lib/kafka/data
+    mem_limit: 768m
+    healthcheck:
+      # A port check, not kafka-broker-api-versions.sh: that starts a second JVM inside this 768M limit.
+      test: ["CMD-SHELL", "nc -z localhost 9092"]
+      interval: 10s
+      timeout: 3s
+      start_period: 20s
+      retries: 10
+    restart: unless-stopped
+
+  mongodb:
+    image: mongo:8.0.32
+    profiles: [events]
+    # Caps the WiredTiger cache (default is ~50% of RAM) so mongod fits in 384M.
+    command: ["--wiredTigerCacheSizeGB", "0.25"]
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?set MONGO_ROOT_PASSWORD in infra/compose/.env}
+      # Read by mongo/init/01-service-users.js (one database + user per service).
+      NOTIFICATION_DB_PASSWORD: ${NOTIFICATION_DB_PASSWORD:?set NOTIFICATION_DB_PASSWORD in infra/compose/.env}
+    ports:
+      - "127.0.0.1:27017:27017"
+    volumes:
+      - mongodata:/data/db
+      # Init scripts run only on first start with an empty volume.
+      - ./mongo/init:/docker-entrypoint-initdb.d:ro
+    mem_limit: 384m
+    healthcheck:
+      # mongosh is a Node process (~60 MB), so check less often than the other services.
+      test: ["CMD", "mongosh", "--quiet", "--norc", "--eval", "db.adminCommand('ping').ok"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 5
+    restart: unless-stopped
+
 volumes:
   pgdata:
+  kafkadata:
+  mongodata:
 
 secrets:
   jwt-private-key:
