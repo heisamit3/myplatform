@@ -1,0 +1,63 @@
+# Local dev stack. Start only what you need with profiles:
+#   docker compose -f infra/compose/compose.yaml --profile core up -d
+#   docker compose -f infra/compose/compose.yaml --profile core --profile events up -d
+# Every container has an explicit memory limit (8 GB host, see CLAUDE.md "Resource limits").
+# Ports bind to 127.0.0.1 only, so nothing is exposed to the LAN.
+
+name: myplatform
+
+services:
+  postgres:
+    # pgvector image = official Postgres + the vector extension (needed later by ai-service).
+    image: pgvector/pgvector:0.8.7-pg18-trixie
+    profiles: [core]
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in infra/compose/.env}
+    # Small buffers so Postgres fits in 256M.
+    command: ["postgres", "-c", "shared_buffers=64MB", "-c", "max_connections=50", "-c", "work_mem=2MB"]
+    ports:
+      # Host 5433 by default: a native Windows PostgreSQL service already uses 5432.
+      - "127.0.0.1:${POSTGRES_HOST_PORT:-5433}:5432"
+    volumes:
+      # Postgres 18 images keep data under /var/lib/postgresql/<major>/, so mount the parent.
+      - pgdata:/var/lib/postgresql
+    mem_limit: 256m
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    image: redis:8.10.2-alpine
+    profiles: [core]
+    # Cache, rate limits and token revocation. No persistence locally.
+    # noeviction: when full, writes fail loudly instead of silently dropping revoked-token entries.
+    command: ["redis-server", "--maxmemory", "48mb", "--maxmemory-policy", "noeviction", "--save", "", "--appendonly", "no"]
+    ports:
+      - "127.0.0.1:6379:6379"
+    mem_limit: 64m
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  mailpit:
+    # Fake SMTP server with a web UI and REST API. notification-service sends email here.
+    image: axllent/mailpit:v1.31.4
+    profiles: [events]
+    environment:
+      MP_MAX_MESSAGES: 500
+    ports:
+      # SMTP on host 2525: Windows refuses to bind 1025 here. Containers use mailpit:1025.
+      - "127.0.0.1:2525:1025"
+      - "127.0.0.1:8025:8025" # web UI + API
+    mem_limit: 64m
+    restart: unless-stopped
+
+volumes:
+  pgdata:
