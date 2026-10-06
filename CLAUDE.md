@@ -223,6 +223,9 @@ Assume I may be on my phone unless I say "I'm at the PC".
 - identity-service run (needs `core` up and the key), lighter than bootRun:
   `DB_PASSWORD=$(grep '^IDENTITY_DB_PASSWORD=' infra/compose/.env | cut -d= -f2-) JWT_PRIVATE_KEY_PATH="$(pwd -W)/infra/compose/secrets/jwt-private.pem" java -Xmx256m -jar services/identity-service/build/libs/identity-service-0.0.1-SNAPSHOT.jar`
   (Without a key the app refuses to start; tests use an ephemeral key via `src/test/resources/config/application.yaml`.)
+- Register / login (identity-service on 8081):
+  `curl -s -H 'Content-Type: application/json' -d '{"email":"a@example.com","password":"correct horse battery","displayName":"A"}' localhost:8081/auth/register`
+  then the same with `{"email":...,"password":...}` to `/auth/login` → `accessToken`, `refreshToken`, `expiresIn`
 - Probes: `curl -s localhost:8081/health` · `/ready` · `/metrics` (full health: `/actuator/health`) · JWKS: `/.well-known/jwks.json`
 - Start local K8s: `minikube start --driver=docker --kubernetes-version=v1.31.0 --memory=2560 --cpus=2`
 - Check K8s: `kubectl config current-context && kubectl get nodes`

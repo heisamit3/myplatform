@@ -14,6 +14,10 @@ spring:
     hibernate:
       ddl-auto: validate
     open-in-view: false
+  mvc:
+    # Errors as RFC 9457 problem+json (validation, 401, 409, ...).
+    problemdetails:
+      enabled: true
 
 server:
   port: ${PORT:8081}
@@ -25,6 +29,8 @@ identity:
     # Must be a URL (Spring Security parses iss as one). The service's DNS name in compose and Kubernetes.
     issuer: ${JWT_ISSUER:http://identity-service}
     access-token-ttl: ${JWT_ACCESS_TOKEN_TTL:15m}
+  refresh-token:
+    ttl: ${REFRESH_TOKEN_TTL:7d}
 
 management:
   endpoints:

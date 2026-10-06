@@ -26,6 +26,8 @@ dependencies {
     implementation("org.flywaydb:flyway-database-postgresql")
     // JWT signing (Nimbus + Spring JwtEncoder) without enabling Spring Security's web filters yet.
     implementation("org.springframework.security:spring-security-oauth2-jose")
+    // bcrypt password hashing.
+    implementation("org.springframework.security:spring-security-crypto")
     runtimeOnly("io.micrometer:micrometer-registry-prometheus")
     runtimeOnly("org.postgresql:postgresql")
     testImplementation("org.springframework.boot:spring-boot-starter-actuator-test")

@@ -57,11 +57,15 @@ Decision (2026-10-06): native Windows + Git Bash, not WSL2. Project lives in `C:
 - [x] Tables: users, organizations, memberships, refresh_tokens
       Flyway `V1__identity_schema.sql` (ADR 0002), 6 schema tests on Testcontainers, applied to the compose DB.
 - [ ] Endpoints: register, login, refresh, logout, `GET /me`, create org, switch active org
+      2026-10-06: ✅ `POST /auth/register` (201, bcrypt cost 10, 409 on duplicate) and `POST /auth/login`
+      (access + refresh token, active org = first joined, same 401 + bcrypt time for unknown emails).
+      Errors are RFC 9457 problem+json. Next: refresh, logout, `/me`, orgs.
 - [x] RS256 key pair + `/.well-known/jwks.json`
       PKCS#8 key from `JWT_PRIVATE_KEY_PATH` (no key → startup fails), kid = RFC 7638 thumbprint,
       `AccessTokenIssuer` (sub/org/roles, 15 min, iss `http://identity-service`). 20 tests green.
 - [ ] OpenAPI spec exported to `contracts/openapi/identity.yaml`
 - [ ] Unit tests + Testcontainers integration test for register/login
+      2026-10-06: integration tests done (`AuthFlowTests`, 6 tests). Unit tests still to add.
 - [ ] Dockerfile (multi-stage, non-root), added to the compose `core` profile
 
 ## Phase 2: Gateway + frontend (weeks 4–5)
