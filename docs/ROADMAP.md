@@ -82,7 +82,11 @@ Decision (2026-10-06): native Windows + Git Bash, not WSL2. Project lives in `C:
 
 ## Phase 2: Gateway + frontend (weeks 4–5)
 
-- [ ] api-gateway: routes to identity-service, JWT validation through JWKS, CORS
+- [x] api-gateway: routes to identity-service, JWT validation through JWKS, CORS
+      2026-10-06: Boot 4.0.8 + Spring Cloud 2025.1.3 (2025.1 doesn't support Boot 4.1 yet, ADR 0006).
+      Routes `/auth/**` (public), `/me`, `/orgs/**` (JWT: JWKS signature, exp, iss). 401 = problem+json.
+      CORS for `localhost:5173` with credentials. 14 tests (fake identity on a JDK HttpServer). Compose `core`,
+      176 MiB of 384 MiB after start.
 - [ ] Redis-backed rate limiting on login/register
 - [ ] web: React + Vite + TS. Pages: register, login, dashboard, profile, org switcher
 - [ ] Token handling: short-lived access token in memory, refresh flow

@@ -1,5 +1,5 @@
 # Local dev stack. Start only what you need with profiles:
-#   docker compose -f infra/compose/compose.yaml --profile core up -d      # postgres, redis, identity-service
+#   docker compose -f infra/compose/compose.yaml --profile core up -d      # postgres, redis, identity-service, api-gateway
 #   docker compose -f infra/compose/compose.yaml --profile core --profile events up -d
 # Every container has an explicit memory limit (8 GB host, see CLAUDE.md "Resource limits").
 # Ports bind to 127.0.0.1 only, so nothing is exposed to the LAN.
@@ -73,6 +73,31 @@ services:
     healthcheck:
       # /ready includes the database (busybox wget is in the alpine image; there is no curl).
       test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8081/ready"]
+      interval: 10s
+      timeout: 3s
+      start_period: 40s
+      retries: 3
+    restart: unless-stopped
+
+  api-gateway:
+    build:
+      context: ../../services/api-gateway
+    image: myplatform/api-gateway:local
+    profiles: [core]
+    environment:
+      IDENTITY_URI: http://identity-service:8081
+      JWKS_URI: http://identity-service:8081/.well-known/jwks.json
+      CORS_ALLOWED_ORIGINS: http://localhost:5173
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      # Not strictly needed (keys are fetched on the first token), but avoids 5xx right after `up`.
+      identity-service:
+        condition: service_healthy
+    # Same JVM setting as identity-service (ADR 0005).
+    mem_limit: 384m
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/ready"]
       interval: 10s
       timeout: 3s
       start_period: 40s

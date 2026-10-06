@@ -1,0 +1,55 @@
+# All environment-specific values come from environment variables (12-factor).
+# Defaults point at identity-service running on the host (port 8081).
+spring:
+  application:
+    name: api-gateway
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Keys come from identity-service's JWKS (fetched once, cached, refetched on an unknown kid).
+          jwk-set-uri: ${JWKS_URI:http://localhost:8081/.well-known/jwks.json}
+          # With jwk-set-uri set, this is only checked against the iss claim: no discovery request.
+          issuer-uri: ${JWT_ISSUER:http://identity-service}
+  cloud:
+    gateway:
+      server:
+        webflux:
+          routes:
+            # Paths stay as identity-service defines them (ADR 0006). The Authorization header is
+            # forwarded as is, so identity-service validates the token again (defense in depth).
+            - id: identity
+              uri: ${IDENTITY_URI:http://localhost:8081}
+              predicates:
+                - Path=/auth/**,/me,/orgs,/orgs/**
+
+server:
+  port: ${PORT:8080}
+
+gateway:
+  cors:
+    # Comma-separated. The Vite dev server locally; the real web origin in Kubernetes.
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
+
+management:
+  endpoints:
+    web:
+      # Same layout as the services: /health, /ready, /metrics at the root.
+      base-path: /
+      exposure:
+        include: health,prometheus
+      path-mapping:
+        prometheus: metrics
+        health: actuator/health
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      group:
+        liveness:
+          include: livenessState
+          additional-path: "server:/health"
+        # Downstream services are not part of readiness: one slow service must not take the whole edge out.
+        readiness:
+          include: readinessState
+          additional-path: "server:/ready"

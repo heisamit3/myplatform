@@ -208,7 +208,7 @@ Assume I may be on my phone unless I say "I'm at the PC".
 (Fill in as they get created.)
 
 - First time: `cp infra/compose/.env.example infra/compose/.env` and set `POSTGRES_PASSWORD`
-- Start core stack (postgres, redis, identity-service on 8081): `docker compose -f infra/compose/compose.yaml --profile core up -d`
+- Start core stack (postgres, redis, identity-service on 8081, api-gateway on 8080): `docker compose -f infra/compose/compose.yaml --profile core up -d`
   Needs the JWT key (see below). Rebuild after code changes: `docker compose -f infra/compose/compose.yaml --profile core up -d --build identity-service`
   To run the jar from the host instead, free port 8081 first: `docker compose -f infra/compose/compose.yaml stop identity-service`
 - Add the events profile: `docker compose -f infra/compose/compose.yaml --profile core --profile events up -d`
@@ -220,6 +220,8 @@ Assume I may be on my phone unless I say "I'm at the PC".
   Inside the postgres container 127.0.0.1 is trusted (no password check). Test logins from another container on `myplatform_default`.
 - Stop everything: `docker compose -f infra/compose/compose.yaml down`
 - identity-service build + tests: `cd services/identity-service && ./gradlew build && ./gradlew --stop`
+- api-gateway build + tests (no Docker needed): `cd services/api-gateway && ./gradlew build && ./gradlew --stop`
+  Rebuild the container: `docker compose -f infra/compose/compose.yaml --profile core up -d --build api-gateway`
   (`--stop` frees the Gradle daemon's RAM. Tests need Docker for Testcontainers.)
 - JWT signing key (once): `./scripts/gen-jwt-key.sh` → `infra/compose/secrets/jwt-private.pem` (gitignored)
 - identity-service run on the host (needs postgres up, the key, and port 8081 free), lighter than bootRun:
