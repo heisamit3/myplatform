@@ -28,6 +28,8 @@ Claude Code adds items here when they can't be done remotely. Clear this list wh
       → Package settings → Change visibility → Public) for identity-service, api-gateway, notification-service,
       so minikube/EKS can pull without a pull secret.
 - [ ] `gh auth refresh -s read:packages` (browser login) so Claude Code can list GHCR images/tags from the CLI.
+- [ ] Look at the Grafana dashboard in a browser (K8s monitoring session): `kubectl -n monitoring port-forward
+      svc/grafana 3000:80` → http://localhost:3000 → Dashboards → myplatform → "myplatform services". Screenshot for the README.
 - [ ] Phase 5 UI click-through in Kubernetes (K8s session): `kubectl -n traefik port-forward svc/traefik 8088:80`, open
       http://localhost:8088 → register → create org → switch → reload (stays logged in) → log out.
 - [ ] Phase 2 UI click-through: `docker compose -f infra/compose/compose.yaml --profile core up -d`, then
@@ -178,6 +180,8 @@ Decision (2026-10-06): native Windows + Git Bash, not WSL2. Project lives in `C:
       the pod being deleted and recreated. Redis = Deployment (no persistence, so nothing for a StatefulSet to keep).
       minikube container: 1.44 of 2.5 GiB with postgres + redis + identity-service.
 - [ ] Write a short note in `docs/` explaining each object in my own words (interview prep)
+      2026-10-06: draft by Claude Code in `docs/k8s-objects.md` (every object we use + the gotchas we hit).
+      Left open on purpose: rewrite it in my own words, then tick.
 - [x] Convert to one shared Helm chart used by all services + `values-local.yaml`
       2026-10-06: `infra/helm/service` (Deployment, Service, ConfigMap, optional HTTPRoute), one release per service,
       values in `infra/helm/services/<svc>/values.yaml` + `values-local.yaml` (ADR 0016). identity-service moved from
@@ -190,7 +194,15 @@ Decision (2026-10-06): native Windows + Git Bash, not WSL2. Project lives in `C:
       web. web image: nginx-unprivileged 1.30.5, 60 MB, ~10 MiB RAM, built with `VITE_API_URL=""`; CI builds/pushes it.
       Port-forward `localhost:8088`: SPA deep links 200, register → login (cookie) → `/me` → `POST /orgs` → refresh OK,
       spoofed `X-Forwarded-For` doesn't escape the login limit.
-- [ ] Prometheus + Grafana (lightweight setup) with one dashboard: requests, errors, latency, JVM memory
+- [x] Prometheus + Grafana (lightweight setup) with one dashboard: requests, errors, latency, JVM memory
+      2026-10-06: Prometheus 3.15 server only (no operator/Alertmanager/exporters) + Grafana 13.2, both provisioned
+      from files (ADR 0018); `./scripts/k8s-local-platform.sh --monitoring`. Scrapes annotated pods + filtered cAdvisor.
+      Spring services got SLO latency buckets (25 ms .. 2 s) for p95. Dashboard "myplatform services": requests/s,
+      errors/s, p95/p50, JVM heap, pod memory, Traefik status codes. Verified through Grafana's datasource proxy under
+      steady traffic: gateway 3.5 req/s, identity 1.76 req/s, 401s as gateway CLIENT_ERROR, p95 ~25 ms.
+      Grafana: OOMKilled at 192 Mi + liveness killed it mid-migration → 320 Mi, startup probe, `Recreate`.
+      Memory: Prometheus 68 MiB, Grafana ~280 MiB, Traefik 33 MiB; whole cluster 2.3 GiB (minikube raised to 3 GB in
+      place for the session, then monitoring uninstalled and the limit set back to 2560 MB).
 
 ## Phase 6: GitOps with Argo CD (week 12)
 

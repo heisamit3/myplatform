@@ -1,0 +1,58 @@
+# Prometheus, lightweight (chart prometheus-community/prometheus, version pinned in scripts/k8s-local-platform.sh).
+# Just the server: no Alertmanager, node-exporter, kube-state-metrics or Pushgateway (RAM, ADR 0018).
+alertmanager:
+  enabled: false
+kube-state-metrics:
+  enabled: false
+prometheus-node-exporter:
+  enabled: false
+prometheus-pushgateway:
+  enabled: false
+
+server:
+  global:
+    scrape_interval: 15s
+    evaluation_interval: 15s
+  # Local: short history, nothing on disk (an emptyDir is wiped with the pod).
+  retention: 2d
+  persistentVolume:
+    enabled: false
+  resources:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits: { memory: 256Mi }
+
+configmapReload:
+  prometheus:
+    resources:
+      requests: { cpu: 5m, memory: 16Mi }
+      limits: { memory: 32Mi }
+
+# Scrape jobs: only what the dashboard needs. Each default job can be switched off.
+scrapeConfigs:
+  # Pods with prometheus.io/scrape: "true" (set by the shared chart and on Traefik). Pod labels become metric
+  # labels, e.g. app_kubernetes_io_name="identity-service", plus namespace and pod.
+  kubernetes-pods:
+    enabled: true
+  # Container CPU/memory from the kubelet's cAdvisor, filtered to the two series the dashboard uses.
+  kubernetes-nodes-cadvisor:
+    enabled: true
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: container_memory_working_set_bytes|container_cpu_usage_seconds_total
+        action: keep
+  prometheus:
+    enabled: true
+  kubernetes-api-servers:
+    enabled: false
+  kubernetes-nodes:
+    enabled: false
+  kubernetes-service-endpoints:
+    enabled: false
+  kubernetes-service-endpoints-slow:
+    enabled: false
+  kubernetes-services:
+    enabled: false
+  kubernetes-pods-slow:
+    enabled: false
+  prometheus-pushgateway:
+    enabled: false

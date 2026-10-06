@@ -125,7 +125,9 @@ infra/terraform/aws/       # VPC, EKS, IAM, etc.
   Argo CD + Prometheus/Grafana run locally only during dedicated K8s sessions.
   The full stack runs together on AWS.
 - minikube memory: 2560 MB by default. Raise it to 3072 MB only for Argo CD/monitoring sessions with
-  nothing else running. Run `minikube stop` when a K8s session ends; a running cluster holds its RAM even when idle.
+  nothing else running. minikube can't resize an existing cluster, so raise the container limit in place (keeps data):
+  `docker update --memory 3072m --memory-swap 3072m minikube`, and set it back to `2560m` afterwards.
+  Run `minikube stop` when a K8s session ends; a running cluster holds its RAM even when idle.
 - Claude Code, the browser and IDEs run on Windows and share the same 8 GB. Run `./scripts/mem.sh` before heavy
   steps (Git Bash has no `free`). If Windows has under ~1.5 GB free, ask me to close apps before starting
   minikube or a big stack.
@@ -280,6 +282,10 @@ Assume I may be on my phone unless I say "I'm at the PC".
   App through the edge: `kubectl -n traefik port-forward svc/traefik 8088:80` (background) → `http://localhost:8088`
   (web at `/`, API at `/auth`, `/me`, `/orgs`; same curl commands as on 8080). Render without a cluster:
   `helm template <svc> infra/helm/service -f infra/helm/services/<svc>/values.yaml -f infra/helm/services/<svc>/values-local.yaml`
+  Monitoring (dedicated session, minikube at 3 GB): `./scripts/k8s-local-platform.sh --monitoring`, then
+  `kubectl -n monitoring port-forward svc/prometheus-server 9090:80` (API: `curl -s --get localhost:9090/api/v1/query --data-urlencode 'query=up'`)
+  and `kubectl -n monitoring port-forward svc/grafana 3000:80` (anonymous viewer; dashboard uid `myplatform-services`).
+  Dashboard JSON: `infra/helm/platform/dashboards/` → re-run the script to reload. Remove: `helm uninstall grafana prometheus -n monitoring`
   Releases: `helm list -A` · history/rollback: `helm -n myplatform history <svc>` / `helm -n myplatform rollback <svc> <rev>`
   psql: `MSYS_NO_PATHCONV=1 kubectl -n myplatform exec -it postgres-0 -- psql -U postgres -d identity`
   Fresh DB: `kubectl -n myplatform delete statefulset postgres && kubectl -n myplatform delete pvc data-postgres-0`

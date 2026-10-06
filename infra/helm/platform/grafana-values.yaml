@@ -1,0 +1,63 @@
+# Grafana (chart grafana-community/grafana, version pinned in scripts/k8s-local-platform.sh; the chart moved there
+# from grafana/helm-charts). Datasource and dashboards are provisioned from files: nothing is clicked together.
+testFramework:
+  enabled: false
+
+persistence:
+  enabled: false
+
+# 192Mi was OOMKilled during the first start (Grafana 13 runs its storage migrations then). Request = limit.
+resources:
+  requests: { cpu: 100m, memory: 320Mi }
+  limits: { memory: 320Mi }
+
+# Stop the old pod before starting the new one: two Grafanas starting at once saturate the 2-CPU node.
+deploymentStrategy:
+  type: Recreate
+
+# The first start runs Grafana's database migrations (minutes on a busy 2-CPU minikube). Without a startup probe
+# the chart's liveness probe (60 s + 10 x 10 s) kills it mid-migration, forever. The startup probe allows 10 min
+# and holds off liveness until Grafana has answered once.
+startupProbe:
+  httpGet:
+    path: /api/health
+    port: grafana
+  periodSeconds: 10
+  failureThreshold: 60
+
+# The admin password is generated into Secret "grafana" (key admin-password).
+# Local only (reached through kubectl port-forward): anonymous users may view, not edit.
+grafana.ini:
+  analytics:
+    check_for_updates: false
+    reporting_enabled: false
+  auth.anonymous:
+    enabled: true
+    org_role: Viewer
+
+datasources:
+  datasources.yaml:
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        uid: prometheus
+        type: prometheus
+        access: proxy
+        url: http://prometheus-server.monitoring.svc
+        isDefault: true
+
+dashboardProviders:
+  dashboardproviders.yaml:
+    apiVersion: 1
+    providers:
+      - name: myplatform
+        folder: myplatform
+        type: file
+        disableDeletion: true
+        editable: false
+        options:
+          path: /var/lib/grafana/dashboards/myplatform
+
+# ConfigMap grafana-dashboards = the JSON files in infra/helm/platform/dashboards/ (created by k8s-local-platform.sh).
+dashboardsConfigMaps:
+  myplatform: grafana-dashboards
