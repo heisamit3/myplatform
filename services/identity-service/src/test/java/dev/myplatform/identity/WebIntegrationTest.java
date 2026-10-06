@@ -12,8 +12,8 @@ import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.context.annotation.Import;
 
 /**
- * Full app on a random port with a Testcontainers Postgres and a {@code RestTestClient}.
- * All HTTP tests use this one annotation so Spring reuses a single context (and a single container).
+ * Full app on a random port with Testcontainers Postgres + Kafka and a {@code RestTestClient}.
+ * All HTTP tests use this one annotation so Spring reuses a single context (and one set of containers).
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)

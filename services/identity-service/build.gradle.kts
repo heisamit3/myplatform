@@ -30,6 +30,8 @@ dependencies {
     implementation("org.springframework.security:spring-security-crypto")
     // OpenAPI spec generated from the controllers; exported to contracts/openapi/ by a test.
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-api:3.1.1")
+    // Domain events to Kafka (contracts/events/).
+    implementation("org.springframework.boot:spring-boot-starter-kafka")
     runtimeOnly("io.micrometer:micrometer-registry-prometheus")
     runtimeOnly("org.postgresql:postgresql")
     testImplementation("org.springframework.boot:spring-boot-starter-actuator-test")
@@ -42,6 +44,9 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-testcontainers")
     testImplementation("org.testcontainers:testcontainers-junit-jupiter")
     testImplementation("org.testcontainers:testcontainers-postgresql")
+    testImplementation("org.testcontainers:testcontainers-kafka")
+    // Validates published events against contracts/events/*.schema.json.
+    testImplementation("com.networknt:json-schema-validator:3.0.8")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
@@ -55,5 +60,6 @@ tasks.withType<Test> {
     maxHeapSize = "384m"
     // OpenApiContractTests compares against this folder, so editing it must re-run the tests.
     inputs.files("../../contracts/openapi").withPropertyName("contracts")
+    inputs.files("../../contracts/events").withPropertyName("eventContracts")
     inputs.property("updateContracts", System.getenv("UPDATE_CONTRACTS") ?: "")
 }

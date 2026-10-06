@@ -61,6 +61,8 @@ services:
       DB_PASSWORD: ${IDENTITY_DB_PASSWORD:?set IDENTITY_DB_PASSWORD in infra/compose/.env}
       # Mounted from the secret below. Create it once with ./scripts/gen-jwt-key.sh.
       JWT_PRIVATE_KEY_PATH: /run/secrets/jwt-private-key
+      # Only reachable with the events profile. Without it, registration still works; events are logged as lost.
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     secrets:
       - jwt-private-key
     # No host port: clients go through api-gateway on 8080. The gateway reaches identity-service:8081
@@ -69,6 +71,10 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      # Optional: with the events profile, wait for Kafka so the topic is created at startup.
+      kafka:
+        condition: service_healthy
+        required: false
     # The image sets -XX:MaxRAMPercentage=40 (ADR 0005): heap cap ~154 MiB of this limit.
     mem_limit: 384m
     healthcheck:

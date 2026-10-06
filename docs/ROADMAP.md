@@ -116,7 +116,11 @@ Decision (2026-10-06): native Windows + Git Bash, not WSL2. Project lives in `C:
       2026-10-06: `envelope.v1` + `identity.user.registered.v1` (draft 2020-12, ADR 0010). Strict for producers,
       `orgId` nullable for user-level events. `./scripts/check-event-schemas.sh`: schemas compile, example valid,
       2 invalid cases rejected (extra `passwordHash`, non-UTC time).
-- [ ] identity-service publishes `identity.user.registered.v1`
+- [x] identity-service publishes `identity.user.registered.v1`
+      2026-10-06: after commit (`@TransactionalEventListener` + `@Async`), JSON as String (no Java type headers),
+      key = userId, topic declared by the service (3 partitions). ADR 0011. `UserRegisteredEventTests` validates the
+      real event (Testcontainers Kafka) against `contracts/events/`. 75 tests. Compose: register → event on the topic;
+      with Kafka stopped, register still 201 in ~0.4 s (event logged as lost; outbox fixes that).
 - [ ] notification-service (NestJS): consumes it idempotently, stores history in MongoDB, sends a welcome email to Mailpit
 - [ ] Verify: register through the API, then the email appears in Mailpit (check via Mailpit's API with curl)
 - [ ] Stretch: transactional outbox in identity-service

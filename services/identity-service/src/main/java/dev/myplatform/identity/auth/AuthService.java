@@ -1,11 +1,14 @@
 package dev.myplatform.identity.auth;
 
+import java.time.Clock;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
 
 import org.jspecify.annotations.Nullable;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -18,6 +21,7 @@ import dev.myplatform.identity.token.AccessTokenIssuer;
 import dev.myplatform.identity.token.JwtProperties;
 import dev.myplatform.identity.user.Emails;
 import dev.myplatform.identity.user.User;
+import dev.myplatform.identity.user.UserRegistered;
 import dev.myplatform.identity.user.UserRepository;
 
 @Service
@@ -28,21 +32,28 @@ class AuthService {
     private final RefreshTokenService refreshTokens;
     private final AccessTokenIssuer accessTokens;
     private final PasswordEncoder passwordEncoder;
+    private final ApplicationEventPublisher events;
+    private final Clock clock;
     private final long accessTokenTtlSeconds;
     // Checked when the email is unknown, so both paths cost one bcrypt and take about the same time.
     private final String dummyHash;
 
     AuthService(UserRepository users, MembershipRepository memberships, RefreshTokenService refreshTokens,
-            AccessTokenIssuer accessTokens, PasswordEncoder passwordEncoder, JwtProperties jwtProperties) {
+            AccessTokenIssuer accessTokens, PasswordEncoder passwordEncoder, JwtProperties jwtProperties,
+            ApplicationEventPublisher events, Clock clock) {
         this.users = users;
         this.memberships = memberships;
         this.refreshTokens = refreshTokens;
         this.accessTokens = accessTokens;
         this.passwordEncoder = passwordEncoder;
+        this.events = events;
+        this.clock = clock;
         this.accessTokenTtlSeconds = jwtProperties.accessTokenTtl().toSeconds();
         this.dummyHash = passwordEncoder.encode(RefreshTokenService.generate());
     }
 
+    // Transactional so UserRegistered is relayed to Kafka only after the insert commits.
+    @Transactional
     UserResponse register(RegisterRequest request) {
         String email = Emails.normalize(request.email());
         if (users.existsByEmail(email)) {
@@ -55,6 +66,8 @@ class AuthService {
             // Two concurrent registrations passed the check above; the UNIQUE constraint decides.
             throw new EmailAlreadyRegisteredException();
         }
+        // Milliseconds: what JavaScript Dates (notification-service) can represent.
+        events.publishEvent(UserRegistered.of(user, clock.instant().truncatedTo(ChronoUnit.MILLIS)));
         return UserResponse.from(user);
     }
 

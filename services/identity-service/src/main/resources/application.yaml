@@ -18,6 +18,16 @@ spring:
     # Errors as RFC 9457 problem+json (validation, 401, 409, ...).
     problemdetails:
       enabled: true
+  kafka:
+    # Compose: kafka:9092. Default = the host listener of the compose broker.
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9094}
+    producer:
+      # Keys and values are Strings: events are serialized to JSON by us (no Java type headers).
+      # acks=all + idempotence are the Kafka client defaults.
+      buffer-memory: 4MB
+      properties:
+        # How long send() may wait for broker metadata. Sends run on a background thread (ADR 0011).
+        max.block.ms: ${KAFKA_MAX_BLOCK_MS:10000}
 
 server:
   port: ${PORT:8081}
@@ -31,6 +41,9 @@ identity:
     access-token-ttl: ${JWT_ACCESS_TOKEN_TTL:15m}
   refresh-token:
     ttl: ${REFRESH_TOKEN_TTL:7d}
+  events:
+    # Topics are declared at startup (auto-create is off in the broker). 1 locally: single broker.
+    replication-factor: ${KAFKA_REPLICATION_FACTOR:1}
 
 springdoc:
   # Spec at /v3/api-docs(.yaml); exported to contracts/openapi/identity.yaml by OpenApiContractTests.
