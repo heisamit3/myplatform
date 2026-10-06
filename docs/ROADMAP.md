@@ -38,11 +38,11 @@ Decision (2026-10-06): native Windows + Git Bash, not WSL2. Project lives in `C:
 - [x] 🖥️ Install anything missing with winget (may show a UAC prompt)
       2026-10-06: gh 2.102.0, helm v4.3.0, uv 0.12.23 ✅
 - [x] Check `gh auth status`. Logged in as `heisamit3` (scopes: repo, workflow, read:org, gist).
-- [ ] 🖥️ (only if gh isn't logged in) Create the GitHub repo (public, so it counts for the portfolio)
+- [x] Create the GitHub repo (public, so it counts for the portfolio): https://github.com/heisamit3/myplatform
 - [x] Repo in `C:\dev\myplatform` with `CLAUDE.md`, `docs/ROADMAP.md`, `.claude/settings.json`, `.gitattributes`,
       `.gitignore`, `.editorconfig` and a basic `README.md`
 - [x] Create the folder skeleton from the "Repo layout" section in CLAUDE.md
-- [x] First commit (local, 2026-10-06). Push after the GitHub repo exists and I approve
+- [x] First commit (local, 2026-10-06). Pushed to GitHub 2026-10-06
 
 ## Phase 1: Local data + identity-service (weeks 2–3)
 
