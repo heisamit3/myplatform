@@ -70,8 +70,10 @@ Decision (2026-10-06): native Windows + Git Bash, not WSL2. Project lives in `C:
 - [x] OpenAPI spec exported to `contracts/openapi/identity.yaml`
       2026-10-06: code-first with springdoc 3.1.1 (ADR 0004). `OpenApiContractTests` fails on drift;
       all errors are problem+json (incl. the 401 from Spring Security). `redocly lint`: valid, 3 accepted warnings.
-- [ ] Unit tests + Testcontainers integration test for register/login
-      2026-10-06: integration tests done (`AuthFlowTests` 6, `RefreshFlowTests` 7, `TenancyFlowTests` 5). Unit tests still to add.
+- [x] Unit tests + Testcontainers integration test for register/login
+      2026-10-06: integration: `AuthFlowTests` 6, `RefreshFlowTests` 7, `TenancyFlowTests` 5 (Testcontainers).
+      Unit (no Spring, no Docker, ~2 s): `RefreshTokenServiceTests` 9, `RequestValidationTests` 6,
+      `CreateOrgRequestTests` 15, `EmailsTests` 2. 71 tests total.
 - [x] Dockerfile (multi-stage, non-root), added to the compose `core` profile
       2026-10-06: JDK 21 noble build stage (Gradle, BuildKit cache) → Temurin 21.0.12.1 JRE alpine, UID 10001,
       Spring Boot layers (app layer 61 kB, image 275 MB). Compose: JWT key as a compose secret, waits for postgres,
