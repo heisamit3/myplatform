@@ -286,7 +286,13 @@ Assume I may be on my phone unless I say "I'm at the PC".
   `kubectl -n monitoring port-forward svc/prometheus-server 9090:80` (API: `curl -s --get localhost:9090/api/v1/query --data-urlencode 'query=up'`)
   and `kubectl -n monitoring port-forward svc/grafana 3000:80` (anonymous viewer; dashboard uid `myplatform-services`).
   Dashboard JSON: `infra/helm/platform/dashboards/` → re-run the script to reload. Remove: `helm uninstall grafana prometheus -n monitoring`
-  Releases: `helm list -A` · history/rollback: `helm -n myplatform history <svc>` / `helm -n myplatform rollback <svc> <rev>`
+  Argo CD (GitOps, ADR 0019; dedicated session, minikube at 3 GB): `./scripts/k8s-local-platform.sh --argocd` installs it
+  (or scales it back up) + the root app. Deploy = push to `main`: CI bumps `infra/helm/services/<svc>/values-image.yaml`,
+  Argo CD polls Git every 60 s. Status: `kubectl -n argocd get applications` (SYNC/HEALTH). While Argo CD runs, don't
+  use `k8s-local-deploy.sh` (selfHeal reverts it). Pause it to save RAM: `kubectl -n argocd scale deploy,sts --all --replicas=0`.
+  UI: `kubectl -n argocd port-forward svc/argocd-server 8090:80`, user `admin`, password:
+  `kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d`
+  Releases (Traefik, monitoring, Argo CD itself): `helm list -A` · history/rollback: `helm -n myplatform history <svc>` / `helm -n myplatform rollback <svc> <rev>`
   psql: `MSYS_NO_PATHCONV=1 kubectl -n myplatform exec -it postgres-0 -- psql -U postgres -d identity`
   Fresh DB: `kubectl -n myplatform delete statefulset postgres && kubectl -n myplatform delete pvc data-postgres-0`
 - Stop local K8s (frees RAM, keeps the cluster): `minikube stop`

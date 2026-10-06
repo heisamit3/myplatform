@@ -6,15 +6,16 @@ Tags: 🖥️ = needs me at the PC. Untagged = fine from the phone.
 
 ---
 
-## 📍 Status (last session: 2026-10-06)
+## 📍 Status (last session: 2026-10-07)
 
-- **Done:** Phases 0–4, and Phase 5 except one item. CI is green on `main`. Images in GHCR: identity-service,
-  api-gateway, notification-service and web, tagged with the commit SHA.
+- **Done:** Phases 0–4, Phase 5 except one item, Phase 6 except the final verify. CI is green on `main` and
+  now writes each new image SHA to `infra/helm/services/<svc>/values-image.yaml`; Argo CD deploys it.
 - **Open in Phase 5:** rewrite `docs/k8s-objects.md` in my own words (draft exists), then tick it.
-- **Next:** Phase 6, GitOps with Argo CD (dedicated K8s session; minikube raised to 3 GB, see CLAUDE.md).
-- **State left behind:** minikube stopped; the cluster keeps postgres, redis, Traefik and the 3 Helm releases
-  (monitoring uninstalled). Compose isn't running. Nothing uncommitted.
-- **Before the next K8s session:** reboot (Windows had only ~0.8 GB free), then `./scripts/mem.sh`.
+- **Open in Phase 6:** verify an *update*: the next real code change on `main` → bot commit → Argo CD rolls the
+  pod (watch `kubectl -n argocd get applications` + the pod image).
+- **Next:** Phase 7 (AWS). Starts with 🖥️ items: AWS account, MFA, Budgets alerts.
+- **State left behind:** minikube stopped. Argo CD is installed but scaled to 0 (saves ~0.5 GB);
+  `./scripts/k8s-local-platform.sh --argocd` brings it back. Services run the CI images (`a45e5a8`).
 
 ## 🖥️ At-PC queue
 
@@ -34,9 +35,10 @@ Claude Code adds items here when they can't be done remotely. Clear this list wh
 - [x] minikube warned "Failing to connect to https://registry.k8s.io/ from inside the minikube container".
       2026-10-06: false alarm. From inside minikube, registry.k8s.io / Docker Hub / ghcr.io all answer, and a real
       `docker pull` of a registry.k8s.io image works. The warning still shows on every start; ignore it.
-- [ ] GHCR packages are private by default. Make each public (GitHub → profile → Packages → `myplatform/<service>`
+- [x] GHCR packages are private by default. Make each public (GitHub → profile → Packages → `myplatform/<service>`
       → Package settings → Change visibility → Public) for identity-service, api-gateway, notification-service, web,
       so minikube/EKS can pull without a pull secret.
+      2026-10-07: already public (anonymous pull of all 4 works).
 - [ ] `gh auth refresh -s read:packages` (browser login) so Claude Code can list GHCR images/tags from the CLI.
 - [ ] Look at the Grafana dashboard in a browser (K8s monitoring session): `kubectl -n monitoring port-forward
       svc/grafana 3000:80` → http://localhost:3000 → Dashboards → myplatform → "myplatform services". Screenshot for the README.
@@ -216,9 +218,18 @@ Decision (2026-10-06): native Windows + Git Bash, not WSL2. Project lives in `C:
 
 ## Phase 6: GitOps with Argo CD (week 12)
 
-- [ ] Install Argo CD locally (K8s session only, because of RAM; minikube at 3072 MB)
-- [ ] Argo CD Applications in `infra/argocd/` pointing to the Helm chart
-- [ ] CI updates the image tag in `values-*.yaml` after pushing (bot commit with `[skip ci]`)
+- [x] Install Argo CD locally (K8s session only, because of RAM; minikube at 3072 MB)
+      2026-10-07: Argo CD v3.5.3 (chart 10.9.6), only controller/repo-server/server/redis (ADR 0019),
+      `./scripts/k8s-local-platform.sh --argocd`. Whole cluster 2.34 of 3 GiB with Argo CD + app + Traefik.
+- [x] Argo CD Applications in `infra/argocd/` pointing to the Helm chart
+      2026-10-07: app of apps: `infra/argocd/local/root.yaml` → `apps/` (identity-service, api-gateway, web),
+      automated sync with prune + selfHeal. Took over the Helm-installed objects (old release records deleted).
+      selfHeal check: `kubectl scale deploy/web --replicas=3` → back to 1 after 8 s. Smoke via Traefik:
+      register 201, `/me` 200, `/` 200.
+- [x] CI updates the image tag in `values-*.yaml` after pushing (bot commit with `[skip ci]`)
+      2026-10-07: `bump-tag` job in `_build-image.yml` → `values-image.yaml`. First run: 4 services pushed bot commits
+      at once, retries worked, Argo CD deployed `ghcr.io/.../<svc>:a45e5a8`. Gotcha: my own commit message
+      quoted the skip marker, so GitHub skipped that push's CI.
 - [ ] Verify: merge a change, then Argo CD syncs the new version without a manual deploy
 
 ## Phase 7: AWS ephemeral environment (weeks 13–15)

@@ -13,6 +13,10 @@ services=("$@")
 
 for s in "${services[@]}"; do
   echo "== $s"
+  # Argo CD owns it (ADR 0019): a manual Helm deploy would be reverted by selfHeal within seconds.
+  if kubectl -n argocd get application "$s" >/dev/null 2>&1; then
+    echo "refusing: Argo CD manages $s; deploy by pushing to main" >&2; exit 1
+  fi
   # --wait: returns once the pods are Ready (or fails after the timeout, e.g. on a crash loop).
   helm upgrade --install "$s" infra/helm/service -n myplatform \
     -f "infra/helm/services/$s/values.yaml" -f "infra/helm/services/$s/values-local.yaml" \
