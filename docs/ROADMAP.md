@@ -24,6 +24,9 @@ Claude Code adds items here when they can't be done remotely. Clear this list wh
 - [ ] minikube warned "Failing to connect to https://registry.k8s.io/ from inside the minikube container".
       The cluster started anyway (images were cached). Before Phase 5, test pulls with
       `minikube ssh -- curl -sI https://registry.k8s.io`. Cloudflare WARP is a likely suspect.
+- [ ] Phase 2 UI click-through: `docker compose -f infra/compose/compose.yaml --profile core up -d`, then
+      `cd web && npm run dev`, open http://localhost:5173 → register → (lands on dashboard) → create an org →
+      create a second org → switch with the header dropdown → Profile → reload the page (should stay logged in) → Log out.
 
 ## Phase 0: Setup (week 1)
 
