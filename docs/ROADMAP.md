@@ -91,8 +91,13 @@ Decision (2026-10-06): native Windows + Git Bash, not WSL2. Project lives in `C:
       2026-10-06: `RequestRateLimiter` token buckets per client IP (ADR 0007): login 10/min, register 5/min,
       429 + `X-RateLimit-*`. Fails open without Redis. `RATE_LIMIT_TRUSTED_PROXIES` for X-Forwarded-For
       behind Traefik (Phase 5). 21 gateway tests (Testcontainers Redis). curl: 11th login → 429.
-- [ ] web: React + Vite + TS. Pages: register, login, dashboard, profile, org switcher
-- [ ] Token handling: short-lived access token in memory, refresh flow
+- [x] web: React + Vite + TS. Pages: register, login, dashboard, profile, org switcher
+      2026-10-06: React 19, Vite 8, TS 6 strict, react-router 8, oxlint, Vitest. Dashboard creates an org
+      (slug from name) and switches into it; header org switcher; profile lists memberships + roles.
+- [x] Token handling: short-lived access token in memory, refresh flow
+      2026-10-06: refresh token in an HttpOnly/Secure/SameSite=Strict cookie on `/auth`, set by the gateway
+      (ADR 0008). `ApiClient`: token in memory, refresh on 401 + one retry, single-flight refresh, session resumed
+      on reload. 14 web tests. curl replay with `Origin: localhost:5173`: register → login → reload → org → switch → logout.
 - [ ] Everything reachable through `localhost:8080` only (verify with curl remotely)
 - [ ] 🖥️ Click through the UI in a browser: register → login → dashboard → switch org
 

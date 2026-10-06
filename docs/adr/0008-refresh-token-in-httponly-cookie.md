@@ -35,5 +35,9 @@ only means a page reload logs the user out.
   (other ports on localhost) could still send it; that's acceptable locally.
 - Through the gateway, the refresh token is never in a response body. curl users keep it in a cookie jar
   (`curl -c jar -b jar`). Behind the gateway, the identity API still uses JSON.
+- Without a cookie (first visit), `/auth/refresh` gets 401 "No session" from the gateway itself.
+- Two tabs refreshing at the same instant: the second presents a token that was just rotated out, which
+  looks like reuse and ends the session (ADR 0003). Within one tab the web client shares a single refresh.
+  A short grace period in identity-service would fix the multi-tab case if it ever matters.
 - An XSS bug can still act as the user while the page is open; it just can't take a long-lived token away.
 - `REFRESH_COOKIE_SECURE=false` exists for plain-HTTP non-localhost setups; browsers allow Secure on `http://localhost`.

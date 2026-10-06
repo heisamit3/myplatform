@@ -240,6 +240,8 @@ Assume I may be on my phone unless I say "I'm at the PC".
   After an API change: `cd services/identity-service && UPDATE_CONTRACTS=true ./gradlew test --tests '*OpenApiContractTests'`
   Lint: `npx -y @redocly/cli@latest lint contracts/openapi/identity.yaml`
 - Probes: `curl -s localhost:8081/health` · `/ready` · `/metrics` (full health: `/actuator/health`) · JWKS: `/.well-known/jwks.json`
+- web (needs the core stack for the API): `cd web && npm ci` once, then `npm run dev` (port 5173, strict; run it in the background)
+  Checks: `npm test` · `npm run lint` · `npm run typecheck` · `npm run build`. API base URL: `VITE_API_URL` (default `http://localhost:8080`)
 - Start local K8s: `minikube start --driver=docker --kubernetes-version=v1.31.0 --memory=2560 --cpus=2`
 - Check K8s: `kubectl config current-context && kubectl get nodes`
 - Stop local K8s (frees RAM, keeps the cluster): `minikube stop`
