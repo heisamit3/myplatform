@@ -54,7 +54,8 @@ Decision (2026-10-06): native Windows + Git Bash, not WSL2. Project lives in `C:
 - [x] identity-service: Spring Boot project, Flyway, Actuator, `/health` `/ready` `/metrics`
       2026-10-06: Boot 4.1.1, Gradle 9.7.1. `/health` = liveness (no DB), `/ready` = readiness (incl. DB → 503 when
       Postgres is down), `/metrics` = Prometheus. 4 tests green (Testcontainers, same pgvector image as compose).
-- [ ] Tables: users, organizations, memberships, refresh_tokens
+- [x] Tables: users, organizations, memberships, refresh_tokens
+      Flyway `V1__identity_schema.sql` (ADR 0002), 6 schema tests on Testcontainers, applied to the compose DB.
 - [ ] Endpoints: register, login, refresh, logout, `GET /me`, create org, switch active org
 - [ ] RS256 key pair + `/.well-known/jwks.json`
 - [ ] OpenAPI spec exported to `contracts/openapi/identity.yaml`
