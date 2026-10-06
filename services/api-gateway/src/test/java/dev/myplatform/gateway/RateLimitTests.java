@@ -1,5 +1,7 @@
 package dev.myplatform.gateway;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,9 +31,12 @@ class RateLimitTests {
         for (int i = 0; i < 10; i++) {
             post("/auth/login").expectStatus().isOk();
         }
+        // The bucket refills 1 token/s and a login costs 6, so a slow machine (CI) can see 1–5 tokens
+        // back by now: "remaining" is only guaranteed to be below the cost of one more login.
         post("/auth/login")
                 .expectStatus().isEqualTo(HttpStatus.TOO_MANY_REQUESTS)
-                .expectHeader().valueEquals("X-RateLimit-Remaining", "0");
+                .expectHeader().value("X-RateLimit-Remaining",
+                        remaining -> assertThat(Integer.parseInt(remaining)).isBetween(0, 5));
     }
 
     @Test
