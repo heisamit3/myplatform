@@ -271,5 +271,10 @@ Assume I may be on my phone unless I say "I'm at the PC".
 - Start local K8s: `minikube start --driver=docker --kubernetes-version=v1.31.0 --memory=2560 --cpus=2`
 - Check K8s: `kubectl config current-context && kubectl get nodes`
 - Load an image into minikube: `./scripts/minikube-load.sh myplatform/identity-service:local` (check: `minikube image ls | grep myplatform`)
+- Local K8s stack (raw YAML, namespace `myplatform`): `./scripts/k8s-local-secrets.sh` (Secrets from `.env` + JWT key)
+  → `kubectl apply -f infra/k8s/raw/` → `kubectl -n myplatform get pods`. Images must be loaded first (above).
+  Test: `kubectl -n myplatform port-forward svc/identity-service 18081:8081` (background), then curl `localhost:18081`.
+  psql: `MSYS_NO_PATHCONV=1 kubectl -n myplatform exec -it postgres-0 -- psql -U postgres -d identity`
+  Fresh DB: `kubectl -n myplatform delete statefulset postgres && kubectl -n myplatform delete pvc data-postgres-0`
 - Stop local K8s (frees RAM, keeps the cluster): `minikube stop`
 - Memory check: `./scripts/mem.sh` (Windows free RAM, Docker VM size, per-container usage)

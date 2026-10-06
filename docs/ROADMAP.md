@@ -165,8 +165,16 @@ Decision (2026-10-06): native Windows + Git Bash, not WSL2. Project lives in `C:
 - [x] Load images with `minikube image load` (no registry needed locally)
       2026-10-06: `minikube image load` fails in 1.34 on this Windows build (`exec: "wmic": executable file not found`).
       Workaround: `./scripts/minikube-load.sh <image>` = `docker save | docker load` into minikube's daemon (docker-env).
-- [ ] Hand-write raw YAML for identity-service: Deployment, Service, ConfigMap, Secret, probes, resource limits
-- [ ] Postgres + Redis in the cluster (StatefulSet + PersistentVolumeClaim)
+- [x] Hand-write raw YAML for identity-service: Deployment, Service, ConfigMap, Secret, probes, resource limits
+      2026-10-06: `infra/k8s/raw/identity-service.yaml`, namespace `myplatform`. startup/liveness (`/health`)/readiness
+      (`/ready`) probes, 384Mi request = limit, no CPU limit, UID 10001, read-only root FS, JWT key as a mounted Secret.
+      Secrets come from `.env` + the JWT key via `./scripts/k8s-local-secrets.sh` (never committed). Ready in ~20 s.
+      Port-forward: register 201 → login → `/me` OK; event pending in the outbox (no Kafka in the cluster yet).
+      Postgres scaled to 0 → pod `0/1`, removed from the Service endpoints, **0 restarts** → back to `1/1` after.
+- [x] Postgres + Redis in the cluster (StatefulSet + PersistentVolumeClaim)
+      2026-10-06: Postgres = StatefulSet + 1Gi PVC + headless Service, compose init script via ConfigMap; data survives
+      the pod being deleted and recreated. Redis = Deployment (no persistence, so nothing for a StatefulSet to keep).
+      minikube container: 1.44 of 2.5 GiB with postgres + redis + identity-service.
 - [ ] Write a short note in `docs/` explaining each object in my own words (interview prep)
 - [ ] Convert to one shared Helm chart used by all services + `values-local.yaml`
 - [ ] Expose the gateway and web with Gateway API (Traefik)
