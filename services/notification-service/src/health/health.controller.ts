@@ -1,5 +1,6 @@
 import { Controller, Get, Header, HttpStatus, Res } from '@nestjs/common';
 import type { Response } from 'express';
+import { UserRegisteredConsumer } from '../kafka/user-registered.consumer.js';
 import { MetricsService } from '../metrics/metrics.service.js';
 import { MongoService } from '../mongo/mongo.service.js';
 
@@ -9,6 +10,7 @@ import { MongoService } from '../mongo/mongo.service.js';
 export class HealthController {
   constructor(
     private readonly mongo: MongoService,
+    private readonly consumer: UserRegisteredConsumer,
     private readonly metrics: MetricsService,
   ) {}
 
@@ -22,6 +24,7 @@ export class HealthController {
   async ready(@Res({ passthrough: true }) res: Response): Promise<{ status: string; components: Record<string, string> }> {
     const components = {
       mongo: (await this.mongo.ping(2_000)) ? 'UP' : 'DOWN',
+      kafka: this.consumer.isConnected() ? 'UP' : 'DOWN',
     };
     const up = Object.values(components).every((s) => s === 'UP');
     if (!up) {

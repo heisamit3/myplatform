@@ -3,5 +3,12 @@
   "plugins": ["typescript", "oxc", "import", "vitest"],
   "rules": {
     "typescript/no-explicit-any": "error"
-  }
+  },
+  "overrides": [
+    {
+      // Tests mutate parsed JSON fixtures freely.
+      "files": ["**/*.spec.ts"],
+      "rules": { "typescript/no-explicit-any": "off" }
+    }
+  ]
 }
