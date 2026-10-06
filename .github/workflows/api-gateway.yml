@@ -52,7 +52,7 @@ jobs:
   image:
     needs: test
     permissions:
-      contents: read
+      contents: write # bump-tag job commits the new image tag (ADR 0019)
       packages: write
     uses: ./.github/workflows/_build-image.yml
     with:

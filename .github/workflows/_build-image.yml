@@ -69,3 +69,44 @@ jobs:
           echo "Pushed: $TAGS" >> "$GITHUB_STEP_SUMMARY"
         env:
           TAGS: ${{ steps.meta.outputs.tags }}
+
+  # GitOps (ADR 0019): record the new image in Git; Argo CD notices the commit and deploys it.
+  # CI never talks to a cluster. Pushes made with GITHUB_TOKEN don't start new workflow runs ([skip ci] is a
+  # second guard).
+  bump-tag:
+    needs: image
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    env:
+      SERVICE: ${{ inputs.service }}
+      SHA: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          # Full history for the "is this commit newer?" check below.
+          fetch-depth: 0
+
+      - name: Write ${{ inputs.service }}:${{ github.sha }} to values-image.yaml
+        run: |
+          file="infra/helm/services/$SERVICE/values-image.yaml"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # Other services' runs push to main at the same time: on a rejected push, re-read main and retry.
+          for attempt in 1 2 3 4 5; do
+            git fetch -q origin main && git reset -q --hard origin/main
+            current="$(sed -n 's/^  tag: //p' "$file")"
+            if [ "$current" = "$SHA" ]; then echo "already at $SHA"; exit 0; fi
+            # A slower, older run must not roll back a newer image that already went out.
+            if git merge-base --is-ancestor "$SHA" "$current" 2>/dev/null; then
+              echo "main already deploys $current, which is newer than $SHA"; exit 0
+            fi
+            sed -i "s/^  tag: .*/  tag: $SHA/" "$file"
+            git commit -q -am "ci(deploy): $SERVICE ${SHA:0:7} [skip ci]"
+            if git push -q origin HEAD:main; then echo "deployed tag $SHA" >> "$GITHUB_STEP_SUMMARY"; exit 0; fi
+            sleep $((attempt * 3))
+          done
+          echo "could not push after 5 attempts" >&2; exit 1

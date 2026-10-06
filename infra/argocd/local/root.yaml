@@ -1,0 +1,20 @@
+# Root Application ("app of apps", ADR 0019): applied once by scripts/k8s-local-platform.sh --argocd.
+# It syncs the directory apps/, so adding a service = committing one more Application file there.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: root-local
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/heisamit3/myplatform.git
+    targetRevision: main
+    path: infra/argocd/local/apps
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true      # an Application file deleted from Git = Application deleted
+      selfHeal: true

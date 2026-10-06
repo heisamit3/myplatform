@@ -1,0 +1,44 @@
+# Argo CD, trimmed for an 8 GB laptop (ADR 0019). Installed by scripts/k8s-local-platform.sh --argocd.
+# Kept: application-controller (compares Git with the cluster and syncs), repo-server (clones Git, renders Helm),
+# server (API + UI), redis (cache). Dropped: Dex (SSO), notifications, ApplicationSet controller.
+
+dex:
+  enabled: false
+
+notifications:
+  enabled: false
+
+# Generates Applications from templates (e.g. one per directory). We write our few Applications by hand.
+applicationSet:
+  replicas: 0
+
+configs:
+  params:
+    # Plain HTTP behind kubectl port-forward; no self-signed TLS warnings in curl.
+    server.insecure: true
+  cm:
+    # Poll Git every 60 s (default 120 s) so a merge shows up quickly in the demo. No webhook: the cluster
+    # isn't reachable from GitHub.
+    timeout.reconciliation: 60s
+    timeout.reconciliation.jitter: 10s
+
+# Memory request = limit, no CPU limit (same rule as our chart, ADR 0016).
+controller:
+  resources:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits: { memory: 256Mi }
+
+repoServer:
+  resources:
+    requests: { cpu: 50m, memory: 192Mi }
+    limits: { memory: 192Mi }
+
+server:
+  resources:
+    requests: { cpu: 25m, memory: 96Mi }
+    limits: { memory: 96Mi }
+
+redis:
+  resources:
+    requests: { cpu: 25m, memory: 48Mi }
+    limits: { memory: 48Mi }

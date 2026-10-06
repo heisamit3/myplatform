@@ -1,0 +1,28 @@
+# identity-service in minikube: the shared chart + this service's values, image from CI (values-image.yaml).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: identity-service
+  namespace: argocd
+  # Deleting the Application also deletes what it deployed (otherwise the pods would keep running, unmanaged).
+  finalizers: [resources-finalizer.argocd.argoproj.io]
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/heisamit3/myplatform.git
+    targetRevision: main
+    path: infra/helm/service
+    helm:
+      releaseName: identity-service
+      # Relative to the chart directory; later files win (same order as scripts/k8s-local-deploy.sh, plus the image).
+      valueFiles:
+        - ../services/identity-service/values.yaml
+        - ../services/identity-service/values-local.yaml
+        - ../services/identity-service/values-image.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: myplatform
+  syncPolicy:
+    automated:
+      prune: true      # an object removed from the chart is deleted from the cluster
+      selfHeal: true   # a manual kubectl edit is reverted to what Git says
