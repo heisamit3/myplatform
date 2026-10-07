@@ -12,9 +12,6 @@ COPY . .
 # API paths (/auth, /me, /orgs) to api-gateway and everything else to this image (ADR 0017).
 ARG VITE_API_URL=""
 ENV VITE_API_URL=${VITE_API_URL}
-# Commit shown in the footer; CI passes the full SHA. Declared late so it doesn't invalidate the npm ci layer.
-ARG GIT_SHA=""
-ENV VITE_GIT_SHA=${GIT_SHA}
 RUN npm run build
 
 # ---- runtime ----
