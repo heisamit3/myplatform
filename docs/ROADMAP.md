@@ -8,14 +8,12 @@ Tags: 🖥️ = needs me at the PC. Untagged = fine from the phone.
 
 ## 📍 Status (last session: 2026-10-07)
 
-- **Done:** Phases 0–4, Phase 5 except one item, Phase 6 except the final verify. CI is green on `main` and
+- **Done:** Phases 0–4, Phase 5 except one item, Phase 6. CI is green on `main` and
   now writes each new image SHA to `infra/helm/services/<svc>/values-image.yaml`; Argo CD deploys it.
 - **Open in Phase 5:** rewrite `docs/k8s-objects.md` in my own words (draft exists), then tick it.
-- **Open in Phase 6:** verify an *update*: the next real code change on `main` → bot commit → Argo CD rolls the
-  pod (watch `kubectl -n argocd get applications` + the pod image).
 - **Next:** Phase 7 (AWS). Starts with 🖥️ items: AWS account, MFA, Budgets alerts.
 - **State left behind:** minikube stopped. Argo CD is installed but scaled to 0 (saves ~0.5 GB);
-  `./scripts/k8s-local-platform.sh --argocd` brings it back. Services run the CI images (`a45e5a8`).
+  `./scripts/k8s-local-platform.sh --argocd` brings it back. Services run the CI images (`b46eb73`); the web footer shows the build.
 
 ## 🖥️ At-PC queue
 
@@ -230,7 +228,11 @@ Decision (2026-10-06): native Windows + Git Bash, not WSL2. Project lives in `C:
       2026-10-07: `bump-tag` job in `_build-image.yml` → `values-image.yaml`. First run: 4 services pushed bot commits
       at once, retries worked, Argo CD deployed `ghcr.io/.../<svc>:a45e5a8`. Gotcha: my own commit message
       quoted the skip marker, so GitHub skipped that push's CI.
-- [ ] Verify: merge a change, then Argo CD syncs the new version without a manual deploy
+- [x] Verify: merge a change, then Argo CD syncs the new version without a manual deploy
+      2026-10-07: pushed `b46eb73` (web footer shows the build commit) → CI green ×4 → 4 bot commits → Argo CD rolled
+      api-gateway, web and identity-service to `b46eb73` within ~1 min of each bot commit, no manual step. Rolling
+      update: the old pod served until the new one was Ready. Bundle served via Traefik contains `b46eb73`;
+      register 201.
 
 ## Phase 7: AWS ephemeral environment (weeks 13–15)
 
