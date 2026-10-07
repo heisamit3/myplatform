@@ -197,6 +197,11 @@ button:disabled {
   padding: 2rem 1.5rem;
 }
 
+.build {
+  padding-top: 0;
+  font-size: 0.8rem;
+}
+
 .card {
   background: var(--surface);
   border: 1px solid var(--border);
