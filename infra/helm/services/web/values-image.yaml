@@ -2,5 +2,5 @@
 # Argo CD layers it last, so it wins over values-local.yaml's locally built image.
 image:
   repository: ghcr.io/heisamit3/myplatform/web
-  tag: b46eb7371e3111ba1df290b3033d40d75280581f
+  tag: ea63905790cfb41b837bf4f65d654199ee13a9eb
   pullPolicy: IfNotPresent
