@@ -250,6 +250,10 @@ Decision (2026-10-06): native Windows + Git Bash, not WSL2. Project lives in `C:
       key/logs). fmt/validate/`terraform test` (plan on mocked providers, 2 runs) green; `terraform.yml` CI added.
       Estimated ~$0.16–0.20/h while it exists. Tick after the first real apply → `kubectl get nodes` → destroy.
 - [ ] Argo CD on EKS syncs `values-aws.yaml`
+      2026-10-08: prepared, not run on EKS (ADR 0022). `infra/argocd/aws/` root app → Gateway API CRDs, gp3 StorageClass,
+      Traefik, data stores, Kafka/MongoDB/Mailpit, 4 services, ordered by sync waves (Kafka before identity-service).
+      Bootstrap: `./scripts/k8s-aws-platform.sh` (Argo CD + Secrets + root app). No load balancer: port-forward.
+      helm template + kubeconform: 36/36 valid. Monitoring not included yet.
 - [ ] Full stack running together, including Kafka and monitoring
       2026-10-08: events stack prepared and verified on minikube (ADR 0021): Kafka, MongoDB, Mailpit in
       `infra/k8s/raw/events/` + notification-service (CI image). register → welcome email; 11 outbox events from the

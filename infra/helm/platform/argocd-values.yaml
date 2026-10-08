@@ -21,6 +21,21 @@ configs:
     # isn't reachable from GitHub.
     timeout.reconciliation: 60s
     timeout.reconciliation.jitter: 10s
+    # Health of child Applications, from the Argo CD docs. Without it an Application counts as healthy as soon as it
+    # exists, so sync waves in an app of apps (infra/argocd/aws/) wouldn't wait for e.g. Kafka to be up.
+    resource.customizations.health.argoproj.io_Application: |
+      hs = {}
+      hs.status = "Progressing"
+      hs.message = ""
+      if obj.status ~= nil then
+        if obj.status.health ~= nil then
+          hs.status = obj.status.health.status
+          if obj.status.health.message ~= nil then
+            hs.message = obj.status.health.message
+          end
+        end
+      end
+      return hs
 
 # Memory request = limit, no CPU limit (same rule as our chart, ADR 0016).
 controller:

@@ -1,0 +1,23 @@
+# The namespace, our Gateway, Postgres and Redis: the hand-written manifests in infra/k8s/raw/ (top level only;
+# reference/ and events/ are subdirectories and not included). Secrets come from scripts/k8s-local-secrets.sh.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: data-core
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+  finalizers: [resources-finalizer.argocd.argoproj.io]
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/heisamit3/myplatform.git
+    targetRevision: main
+    path: infra/k8s/raw
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: myplatform
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

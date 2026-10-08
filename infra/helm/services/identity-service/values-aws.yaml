@@ -1,0 +1,2 @@
+# EKS (Phase 7, ADR 0022): nothing differs from values.yaml yet. The image comes from values-image.yaml (CI).
+# Kept so every service has the same layers: values.yaml → values-aws.yaml → values-image.yaml.

@@ -276,7 +276,7 @@ Assume I may be on my phone unless I say "I'm at the PC".
 - Local K8s stack (namespace `myplatform`), in this order (all idempotent):
   1. images: `docker build -t myplatform/<svc>:local services/<svc>` (web: `web`) → `./scripts/minikube-load.sh myplatform/<svc>:local ...`
   2. `./scripts/k8s-local-platform.sh` (Gateway API CRDs + Traefik; add `--monitoring` for Prometheus + Grafana)
-  3. `./scripts/k8s-local-secrets.sh` (Secrets from `.env` + JWT key) → `kubectl apply -f infra/k8s/raw/` (postgres, redis, Gateway)
+  3. `./scripts/k8s-local-secrets.sh` (Secrets from `.env` + JWT key; `--context eks-…` for EKS) → `kubectl apply -f infra/k8s/raw/` (postgres, redis, Gateway)
   4. `./scripts/k8s-local-deploy.sh [svc...]` (Helm, shared chart `infra/helm/service`, default: identity-service api-gateway web)
   Events stack (ADR 0021; minikube at 3 GB, Argo CD off; 2.6 GiB in total): `kubectl apply -f infra/k8s/raw/events/` (Kafka, MongoDB, Mailpit)
   → once Kafka is Ready, `kubectl -n myplatform rollout restart deploy/identity-service` (creates the topic) →
@@ -310,5 +310,8 @@ Assume I may be on my phone unless I say "I'm at the PC".
   Real runs (at the PC, native terraform + AWS credentials), once: `terraform -chdir=infra/terraform/aws/bootstrap init && terraform -chdir=infra/terraform/aws/bootstrap apply`
   → copy `cluster/backend.hcl.example` / `terraform.tfvars.example` (drop `.example`), fill in bucket + my IP →
   `cd infra/terraform/aws/cluster && terraform init -backend-config=backend.hcl && terraform plan`. Kubeconfig: `terraform output -raw kubeconfig_command`
+  Then GitOps (ADR 0022): `./scripts/k8s-aws-platform.sh` (Argo CD + Secrets + root app) →
+  `kubectl --context eks-myplatform -n argocd get applications` until all Synced/Healthy →
+  `kubectl --context eks-myplatform -n traefik port-forward svc/traefik 8088:80` (same curl commands as minikube)
   Teardown (every AWS session): `./scripts/aws-teardown.sh` (never a bare `terraform destroy`; runbook `docs/runbook-aws-teardown.md`)
 - Memory check: `./scripts/mem.sh` (Windows free RAM, Docker VM size, per-container usage)

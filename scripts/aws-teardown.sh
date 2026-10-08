@@ -65,7 +65,12 @@ if [ "$skip_k8s" = false ]; then
 
   echo "== 1. Argo CD Applications"
   if k get crd applications.argoproj.io >/dev/null 2>&1; then
-    # Their finalizer deletes what each app deployed (cascade) before the Application itself goes away.
+    # The root app (app of apps) first: while it exists, selfHeal recreates every child we delete.
+    # It has no finalizer, so deleting it leaves the children in place for the next step.
+    for app in $(k -n argocd get applications.argoproj.io -o name | grep '/root-' || true); do
+      k -n argocd delete "$app" --wait --timeout=2m
+    done
+    # The children's finalizer deletes what each app deployed (cascade) before the Application itself goes away.
     k -n argocd delete applications.argoproj.io --all --wait --timeout=5m
   else
     echo "Argo CD not installed"

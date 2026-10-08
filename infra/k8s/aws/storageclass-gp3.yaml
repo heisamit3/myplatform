@@ -1,0 +1,19 @@
+# Default StorageClass for EKS: PVCs without a storageClassName (all of ours) get an encrypted gp3 EBS volume.
+# EKS 1.30+ no longer marks any class as default, so without this the Postgres/Kafka/MongoDB PVCs stay Pending.
+# Synced by Argo CD (infra/argocd/aws/apps/storage.yaml). minikube has its own default class.
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: gp3
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "true"
+provisioner: ebs.csi.aws.com
+parameters:
+  type: gp3
+  encrypted: "true"
+# Create the volume only once the pod is scheduled, in the pod's AZ. With Immediate, the volume could land in
+# the other AZ and the pod could never start next to it.
+volumeBindingMode: WaitForFirstConsumer
+# Deleting the PVC deletes the EBS volume (scripts/aws-teardown.sh relies on this).
+reclaimPolicy: Delete
+allowVolumeExpansion: true

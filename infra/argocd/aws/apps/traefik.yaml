@@ -1,0 +1,35 @@
+# Traefik from its upstream chart, with our values file from this repo (two sources: the chart + "$values").
+# Same chart version and values as minikube (scripts/k8s-local-platform.sh). The Service stays ClusterIP:
+# reached with kubectl port-forward, no paid load balancer (ADR 0022).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: traefik
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-3"
+  finalizers: [resources-finalizer.argocd.argoproj.io]
+spec:
+  project: default
+  sources:
+    - repoURL: https://traefik.github.io/charts
+      chart: traefik
+      targetRevision: 41.6.1   # Traefik v3.7.13
+      helm:
+        releaseName: traefik
+        valueFiles:
+          - $values/infra/helm/platform/traefik-values.yaml
+    - repoURL: https://github.com/heisamit3/myplatform.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: traefik
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      # The chart's own CRDs (traefik.io, hub.traefik.io) are large too.
+      - ServerSideApply=true

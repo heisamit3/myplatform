@@ -1,0 +1,4 @@
+# EKS (Phase 7, ADR 0022). The image comes from values-image.yaml (CI).
+env:
+  # Link in the welcome email: the app through the Traefik port-forward (no public URL, ADR 0022).
+  WEB_URL: http://localhost:8088

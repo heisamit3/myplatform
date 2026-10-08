@@ -1,0 +1,23 @@
+# Kafka, MongoDB and Mailpit (infra/k8s/raw/events/, ADR 0021). Wave -1: healthy before the services start,
+# so identity-service finds Kafka at startup and creates its topic.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: data-events
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+  finalizers: [resources-finalizer.argocd.argoproj.io]
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/heisamit3/myplatform.git
+    targetRevision: main
+    path: infra/k8s/raw/events
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: myplatform
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

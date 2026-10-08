@@ -1,0 +1,29 @@
+# api-gateway on EKS: the shared chart + this service's values, image from CI (values-image.yaml). ADR 0022.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: api-gateway
+  namespace: argocd
+  annotations:
+    # Wave 0: after the data stores and Kafka (wave -1) are healthy.
+    argocd.argoproj.io/sync-wave: "0"
+  finalizers: [resources-finalizer.argocd.argoproj.io]
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/heisamit3/myplatform.git
+    targetRevision: main
+    path: infra/helm/service
+    helm:
+      releaseName: api-gateway
+      valueFiles:
+        - ../services/api-gateway/values.yaml
+        - ../services/api-gateway/values-aws.yaml
+        - ../services/api-gateway/values-image.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: myplatform
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

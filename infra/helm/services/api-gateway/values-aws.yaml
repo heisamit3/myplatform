@@ -1,0 +1,5 @@
+# EKS (Phase 7, ADR 0022). The image comes from values-image.yaml (CI).
+env:
+  # Reached through `kubectl port-forward` to Traefik, like minikube (no paid load balancer, ADR 0022).
+  # Same origin as the web app, so CORS isn't used; keep it exact anyway.
+  CORS_ALLOWED_ORIGINS: http://localhost:8088
