@@ -15,6 +15,7 @@ Tags: 🖥️ = needs me at the PC. Untagged = fine from the phone.
   install tools (At-PC queue), AWS account + MFA, Budgets alerts, then the first apply.
 - **State left behind:** minikube stopped (limit back to 2560 MB). Argo CD is installed but scaled to 0 (saves ~0.5 GB);
   `./scripts/k8s-local-platform.sh --argocd` brings it back. Services run the CI images (`ea63905`).
+  The events stack (Kafka, MongoDB, Mailpit, notification-service) exists in minikube but is scaled to 0.
 
 ## 🖥️ At-PC queue
 
@@ -250,6 +251,9 @@ Decision (2026-10-06): native Windows + Git Bash, not WSL2. Project lives in `C:
       Estimated ~$0.16–0.20/h while it exists. Tick after the first real apply → `kubectl get nodes` → destroy.
 - [ ] Argo CD on EKS syncs `values-aws.yaml`
 - [ ] Full stack running together, including Kafka and monitoring
+      2026-10-08: events stack prepared and verified on minikube (ADR 0021): Kafka, MongoDB, Mailpit in
+      `infra/k8s/raw/events/` + notification-service (CI image). register → welcome email; 11 outbox events from the
+      days without Kafka delivered on its start; topic replay → `duplicate, ignored` ×12, no new emails. 2.63 of 3 GiB.
 - [ ] 🖥️ Portfolio capture: screenshots, Grafana dashboard, short demo video, architecture diagram in README
 - [ ] Teardown runbook: delete Argo CD apps and LoadBalancer services → `terraform destroy` → check the billing console
 

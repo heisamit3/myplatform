@@ -1,0 +1,79 @@
+# Mailpit: fake SMTP server + REST API, where notification-service sends email (no real mail leaves).
+# Messages live in memory only. Check from the host:
+#   kubectl -n myplatform port-forward svc/mailpit 8025:8025   →   curl -s localhost:8025/api/v1/messages
+apiVersion: v1
+kind: Service
+metadata:
+  name: mailpit
+  namespace: myplatform
+  labels:
+    app.kubernetes.io/name: mailpit
+    app.kubernetes.io/part-of: myplatform
+spec:
+  selector:
+    app.kubernetes.io/name: mailpit
+  ports:
+    - name: smtp
+      port: 1025
+      targetPort: smtp
+    - name: http
+      port: 8025
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mailpit
+  namespace: myplatform
+  labels:
+    app.kubernetes.io/name: mailpit
+    app.kubernetes.io/part-of: myplatform
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: mailpit
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: mailpit
+        app.kubernetes.io/part-of: myplatform
+    spec:
+      # The image runs as root by default; a single static binary needs nothing root can do.
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: mailpit
+          image: axllent/mailpit:v1.31.4
+          env:
+            - name: MP_MAX_MESSAGES
+              value: "500"
+          ports:
+            - name: smtp
+              containerPort: 1025
+            - name: http
+              containerPort: 8025
+          resources:
+            requests: { cpu: 25m, memory: 64Mi }
+            limits: { memory: 64Mi }
+          readinessProbe:
+            httpGet: { path: /readyz, port: http }
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /livez, port: http }
+            periodSeconds: 15
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+          # Mailpit keeps its SQLite database in a temp file; give it a writable /tmp.
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir:
+            sizeLimit: 64Mi

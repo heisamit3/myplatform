@@ -278,6 +278,13 @@ Assume I may be on my phone unless I say "I'm at the PC".
   2. `./scripts/k8s-local-platform.sh` (Gateway API CRDs + Traefik; add `--monitoring` for Prometheus + Grafana)
   3. `./scripts/k8s-local-secrets.sh` (Secrets from `.env` + JWT key) → `kubectl apply -f infra/k8s/raw/` (postgres, redis, Gateway)
   4. `./scripts/k8s-local-deploy.sh [svc...]` (Helm, shared chart `infra/helm/service`, default: identity-service api-gateway web)
+  Events stack (ADR 0021; minikube at 3 GB, Argo CD off; 2.6 GiB in total): `kubectl apply -f infra/k8s/raw/events/` (Kafka, MongoDB, Mailpit)
+  → once Kafka is Ready, `kubectl -n myplatform rollout restart deploy/identity-service` (creates the topic) →
+  notification-service with the CI image, rendered like Argo CD does:
+  `helm template notification-service infra/helm/service -n myplatform -f infra/helm/services/notification-service/values.yaml -f infra/helm/services/notification-service/values-local.yaml -f infra/helm/services/notification-service/values-image.yaml | kubectl -n myplatform apply -f -`
+  Emails: `kubectl -n myplatform port-forward svc/mailpit 8025:8025` → `curl -s localhost:8025/api/v1/messages`.
+  Kafka CLI: `MSYS_NO_PATHCONV=1 kubectl -n myplatform exec kafka-0 -- env KAFKA_HEAP_OPTS=-Xmx64m /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list`
+  Off again: `kubectl -n myplatform scale sts/kafka sts/mongodb deploy/mailpit deploy/notification-service --replicas=0` (data kept in PVCs)
   After a code change: rebuild + load the image, then `kubectl -n myplatform rollout restart deploy/<svc>` (same `local` tag).
   App through the edge: `kubectl -n traefik port-forward svc/traefik 8088:80` (background) → `http://localhost:8088`
   (web at `/`, API at `/auth`, `/me`, `/orgs`; same curl commands as on 8080). Render without a cluster:

@@ -1,0 +1,131 @@
+# Kafka (KRaft, one node = broker + controller), same image and settings as compose (ADR 0009).
+# Separate directory from infra/k8s/raw/: `kubectl apply -f infra/k8s/raw/` doesn't recurse, so a normal
+# minikube session stays small. Apply with `kubectl apply -f infra/k8s/raw/events/`.
+#
+# Topics aren't auto-created; identity-service creates its topic at startup. If Kafka comes up after
+# identity-service, restart it once: kubectl -n myplatform rollout restart deploy/identity-service
+
+# Headless: DNS "kafka" resolves straight to the pod. Clients bootstrap there and then use the advertised
+# address (also kafka:9092), so it must resolve from every pod in the namespace.
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka
+  namespace: myplatform
+  labels:
+    app.kubernetes.io/name: kafka
+    app.kubernetes.io/part-of: myplatform
+spec:
+  clusterIP: None
+  selector:
+    app.kubernetes.io/name: kafka
+  ports:
+    - name: kafka
+      port: 9092
+      targetPort: kafka
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: kafka
+  namespace: myplatform
+  labels:
+    app.kubernetes.io/name: kafka
+    app.kubernetes.io/part-of: myplatform
+spec:
+  serviceName: kafka
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: kafka
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: kafka
+        app.kubernetes.io/part-of: myplatform
+    spec:
+      # The image's appuser. fsGroup makes the mounted volume group-writable for it (matters on EBS, where a
+      # fresh volume belongs to root).
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile: { type: RuntimeDefault }
+      # SIGTERM → controlled shutdown (flushes logs, hands off leadership); give it time before SIGKILL.
+      terminationGracePeriodSeconds: 60
+      containers:
+        - name: kafka
+          image: apache/kafka:4.3.1
+          env:
+            - name: KAFKA_NODE_ID
+              value: "1"
+            - name: KAFKA_PROCESS_ROLES
+              value: broker,controller
+            # Same fixed ID as compose (base64 of "myplatform-local"); the image formats empty storage with it.
+            - name: CLUSTER_ID
+              value: bXlwbGF0Zm9ybS1sb2NhbA
+            # The controller is in the same process: localhost works before DNS for this pod exists
+            # (a headless Service only publishes Ready pods, and the pod isn't Ready until the quorum is up).
+            - name: KAFKA_CONTROLLER_QUORUM_VOTERS
+              value: 1@localhost:9093
+            - name: KAFKA_CONTROLLER_LISTENER_NAMES
+              value: CONTROLLER
+            - name: KAFKA_LISTENERS
+              value: PLAINTEXT://:9092,CONTROLLER://:9093
+            - name: KAFKA_ADVERTISED_LISTENERS
+              value: PLAINTEXT://kafka:9092
+            - name: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
+              value: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+            - name: KAFKA_INTER_BROKER_LISTENER_NAME
+              value: PLAINTEXT
+            - name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
+              value: "1"
+            - name: KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR
+              value: "1"
+            - name: KAFKA_TRANSACTION_STATE_LOG_MIN_ISR
+              value: "1"
+            - name: KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS
+              value: "0"
+            - name: KAFKA_AUTO_CREATE_TOPICS_ENABLE
+              value: "false"
+            # A subdirectory of the volume: a fresh ext4 volume (EBS) has lost+found at its root, which
+            # Kafka would try to load as a partition directory.
+            - name: KAFKA_LOG_DIRS
+              value: /var/lib/kafka/data
+            - name: KAFKA_HEAP_OPTS
+              value: -Xms256m -Xmx512m
+          ports:
+            - name: kafka
+              containerPort: 9092
+            - name: controller
+              containerPort: 9093
+          resources:
+            requests: { cpu: 250m, memory: 768Mi }
+            limits: { memory: 768Mi }
+          # Port checks, not the Kafka CLI: that would start a second JVM inside this memory limit.
+          startupProbe:
+            tcpSocket: { port: kafka }
+            periodSeconds: 5
+            failureThreshold: 24
+          readinessProbe:
+            tcpSocket: { port: kafka }
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket: { port: kafka }
+            periodSeconds: 15
+            failureThreshold: 4
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: { drop: ["ALL"] }
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/kafka
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 2Gi

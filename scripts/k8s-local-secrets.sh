@@ -1,10 +1,14 @@
 #!/usr/bin/env bash
-# Creates the Secrets (and the Postgres init ConfigMap) that infra/k8s/raw/ expects, from the same local
+# Creates the Secrets (and the database init ConfigMaps) that infra/k8s/raw/ expects, from the same local
 # files compose uses, so nothing secret is ever committed. Idempotent: re-run after changing .env or the key.
 #   Secret postgres-admin {password}   <- POSTGRES_PASSWORD in infra/compose/.env
 #   Secret identity-db    {password}   <- IDENTITY_DB_PASSWORD in infra/compose/.env
 #   Secret identity-jwt   {private.pem} <- infra/compose/secrets/jwt-private.pem (./scripts/gen-jwt-key.sh)
 #   ConfigMap postgres-init            <- infra/compose/postgres/init/01-service-databases.sh
+# For the events stack (infra/k8s/raw/events/):
+#   Secret mongo-root      {password}      <- MONGO_ROOT_PASSWORD
+#   Secret notification-db {password, uri} <- NOTIFICATION_DB_PASSWORD (uri = the service's connection string)
+#   ConfigMap mongo-init                   <- infra/compose/mongo/init/01-service-users.js
 # Usage: ./scripts/k8s-local-secrets.sh   (only against minikube)
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -35,6 +39,10 @@ tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 env_value POSTGRES_PASSWORD >"$tmp/postgres-password"
 env_value IDENTITY_DB_PASSWORD >"$tmp/identity-db-password"
+env_value MONGO_ROOT_PASSWORD >"$tmp/mongo-root-password"
+env_value NOTIFICATION_DB_PASSWORD >"$tmp/notification-db-password"
+# Generated hex passwords are URI-safe; one with ':' '@' '/' would need percent-encoding here.
+printf 'mongodb://notification:%s@mongodb:27017/notification' "$(cat "$tmp/notification-db-password")" >"$tmp/notification-db-uri"
 
 # "create --dry-run=client -o yaml | apply" = create or update.
 apply_secret() {
@@ -45,7 +53,14 @@ apply_secret() {
 apply_secret postgres-admin --from-file=password="$(cygpath -w "$tmp/postgres-password")"
 apply_secret identity-db --from-file=password="$(cygpath -w "$tmp/identity-db-password")"
 apply_secret identity-jwt --from-file=private.pem="$key_file"
+apply_secret mongo-root --from-file=password="$(cygpath -w "$tmp/mongo-root-password")"
+apply_secret notification-db --from-file=password="$(cygpath -w "$tmp/notification-db-password")" \
+  --from-file=uri="$(cygpath -w "$tmp/notification-db-uri")"
 
 kubectl -n "$ns" create configmap postgres-init \
   --from-file=infra/compose/postgres/init/01-service-databases.sh --dry-run=client -o yaml | kubectl apply -f - >/dev/null
 echo "configmap/postgres-init applied"
+
+kubectl -n "$ns" create configmap mongo-init \
+  --from-file=infra/compose/mongo/init/01-service-users.js --dry-run=client -o yaml | kubectl apply -f - >/dev/null
+echo "configmap/mongo-init applied"

@@ -1,6 +1,6 @@
 # notification-service: settings shared by every environment. Environment specifics: values-<env>.yaml.
-# Needs Kafka, MongoDB and an SMTP server in the cluster, so it isn't deployed in minikube (RAM):
-# it runs with the full stack on AWS (Phase 7). Validate locally with `helm template`.
+# Needs Kafka, MongoDB and an SMTP server in the cluster (infra/k8s/raw/events/, ADR 0021). Not in the default
+# minikube set or the local Argo CD apps (RAM); deployed by hand in an events session (see CLAUDE.md).
 # Needs Secret notification-db {uri} (mongodb://notification:<password>@mongodb:27017/notification).
 port: 8082
 
