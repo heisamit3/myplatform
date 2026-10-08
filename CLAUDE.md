@@ -296,4 +296,11 @@ Assume I may be on my phone unless I say "I'm at the PC".
   psql: `MSYS_NO_PATHCONV=1 kubectl -n myplatform exec -it postgres-0 -- psql -U postgres -d identity`
   Fresh DB: `kubectl -n myplatform delete statefulset postgres && kubectl -n myplatform delete pvc data-postgres-0`
 - Stop local K8s (frees RAM, keeps the cluster): `minikube stop`
+- Terraform (AWS, ADR 0020). Offline checks, no install needed (Docker; providers cached in volume `myplatform-tfdata`):
+  `tf() { local s=$1; shift; MSYS_NO_PATHCONV=1 docker run --rm -m 1g -v "$(pwd -W):/repo" -v myplatform-tfdata:/tfdata -e TF_PLUGIN_CACHE_DIR=/tfdata/plugins -e TF_DATA_DIR=/tfdata/$s -w /repo/infra/terraform/aws/$s hashicorp/terraform:1.16.5 "$@"; }`
+  then `tf cluster fmt -check -recursive /repo/infra/terraform` · `tf cluster init -backend=false` · `tf cluster validate` · `tf cluster test`
+  (Don't wrap terraform in `sh -c`: Claude Code's safety check reads the "rm" in "terraform" as a removal.)
+  Real runs (at the PC, native terraform + AWS credentials), once: `terraform -chdir=infra/terraform/aws/bootstrap init && terraform -chdir=infra/terraform/aws/bootstrap apply`
+  → copy `cluster/backend.hcl.example` / `terraform.tfvars.example` (drop `.example`), fill in bucket + my IP →
+  `cd infra/terraform/aws/cluster && terraform init -backend-config=backend.hcl && terraform plan`. Kubeconfig: `terraform output -raw kubeconfig_command`
 - Memory check: `./scripts/mem.sh` (Windows free RAM, Docker VM size, per-container usage)

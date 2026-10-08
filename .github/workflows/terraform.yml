@@ -1,0 +1,42 @@
+# Static checks for the AWS Terraform (ADR 0020): fmt, validate, and `terraform test` (a plan against mocked
+# providers). No AWS credentials here: CI never touches the cloud, applies happen from my PC.
+name: terraform
+
+on:
+  push:
+    branches: [main]
+    paths: &paths
+      - infra/terraform/**
+      - .github/workflows/terraform.yml
+  pull_request:
+    paths: *paths
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: 1.16.5
+          terraform_wrapper: false
+      - name: fmt
+        run: terraform fmt -check -recursive -diff infra/terraform
+      - name: validate bootstrap
+        working-directory: infra/terraform/aws/bootstrap
+        run: terraform init -backend=false -input=false && terraform validate
+      - name: validate + test cluster
+        working-directory: infra/terraform/aws/cluster
+        run: terraform init -backend=false -input=false && terraform validate && terraform test

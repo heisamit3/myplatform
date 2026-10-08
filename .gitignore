@@ -43,6 +43,7 @@ __pycache__/
 *.tfstate
 *.tfstate.*
 *.tfvars
+backend.hcl
 !*.tfvars.example
 crash.log
 

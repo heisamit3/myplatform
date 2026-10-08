@@ -11,7 +11,8 @@ Tags: 🖥️ = needs me at the PC. Untagged = fine from the phone.
 - **Done:** Phases 0–4, Phase 5 except one item, Phase 6. CI is green on `main`, writes each new image SHA to
   `infra/helm/services/<svc>/values-image.yaml`, and Argo CD deploys it (update verified 2026-10-08).
 - **Open in Phase 5:** rewrite `docs/k8s-objects.md` in my own words (draft exists), then tick it.
-- **Next:** Phase 7 (AWS). Starts with 🖥️ items: AWS account, MFA, Budgets alerts.
+- **Next:** Phase 7 (AWS). Terraform code is written and checked (ADR 0020), nothing applied. Next steps are 🖥️:
+  install tools (At-PC queue), AWS account + MFA, Budgets alerts, then the first apply.
 - **State left behind:** minikube stopped (limit back to 2560 MB). Argo CD is installed but scaled to 0 (saves ~0.5 GB);
   `./scripts/k8s-local-platform.sh --argocd` brings it back. Services run the CI images (`ea63905`).
 
@@ -25,6 +26,9 @@ Claude Code adds items here when they can't be done remotely. Clear this list wh
 - [ ] Docker Desktop → Settings → General: start Docker Desktop on login (so remote sessions always have Docker)
 - [x] Restart Claude Code from `C:\dev\myplatform` (done 2026-10-06)
 - [ ] Delete the old OneDrive copy of the project
+- [ ] Phase 7 tools: `winget install --id Hashicorp.Terraform -e` · `winget install --id Amazon.AWSCLI -e` (UAC) ·
+      a kubectl within one minor of EKS 1.36 (`winget install --id Kubernetes.kubectl -e`, then check
+      `kubectl version --client` and which one is first on PATH; minikube ships its own 1.31 too).
 - [x] Install missing tools (a UAC prompt may appear):
       `winget install --id GitHub.cli -e` · `winget install --id Helm.Helm -e` · `winget install --id astral-sh.uv -e`
       Then open a new Git Bash and run `gh auth login`.
@@ -240,6 +244,10 @@ Decision (2026-10-06): native Windows + Git Bash, not WSL2. Project lives in `C:
 - [ ] 🖥️ **AWS Budgets alerts at $5 and $10, before anything else**
 - [ ] 🖥️ First `terraform apply` / `destroy` done at the PC (I want to watch costs live the first time)
 - [ ] Terraform: S3 state backend, VPC (public subnets, no NAT), EKS with small spot nodes
+      2026-10-08: code written, **not applied** (ADR 0020). `bootstrap/` = state bucket (local state, applied once),
+      `cluster/` = VPC (2 public subnets, no NAT) + EKS 1.36 (spot 2 × `*.large`, Pod Identity for EBS CSI, no KMS
+      key/logs). fmt/validate/`terraform test` (plan on mocked providers, 2 runs) green; `terraform.yml` CI added.
+      Estimated ~$0.16–0.20/h while it exists. Tick after the first real apply → `kubectl get nodes` → destroy.
 - [ ] Argo CD on EKS syncs `values-aws.yaml`
 - [ ] Full stack running together, including Kafka and monitoring
 - [ ] 🖥️ Portfolio capture: screenshots, Grafana dashboard, short demo video, architecture diagram in README
