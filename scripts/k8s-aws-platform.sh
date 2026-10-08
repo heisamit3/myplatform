@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Bootstraps GitOps on the EKS cluster (ADR 0022): Argo CD, the Secrets, and the root Application.
 # Argo CD then installs everything else from Git (infra/argocd/aws/apps/): Gateway API CRDs, StorageClass,
-# Traefik, Postgres/Redis, Kafka/MongoDB/Mailpit, the services, in sync-wave order.
+# Traefik, Prometheus/Grafana, Postgres/Redis, Kafka/MongoDB/Mailpit, the services, in sync-wave order.
 # Run after `terraform apply` + the kubeconfig command (terraform output -raw kubeconfig_command). Idempotent.
 # Usage: ./scripts/k8s-aws-platform.sh [context]   (default: eks-myplatform)
 set -euo pipefail
@@ -26,6 +26,7 @@ helm --kube-context "$ctx" upgrade --install argocd argo/argo-cd --version "$ARG
 
 echo "== Secrets (from infra/compose/.env + the JWT key; never in Git)"
 ./scripts/k8s-local-secrets.sh --context "$ctx"
+./scripts/k8s-grafana-admin.sh "$ctx"
 
 echo "== Root Application"
 k apply -f infra/argocd/aws/root.yaml >/dev/null

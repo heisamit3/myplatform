@@ -1,0 +1,14 @@
+# ConfigMap grafana-dashboards from the JSON files here, in a form both paths can use:
+#   minikube: kubectl apply -k infra/helm/platform/dashboards/   (scripts/k8s-local-platform.sh --monitoring)
+#   EKS:      Argo CD Application monitoring-dashboards (infra/argocd/aws/apps/)
+# A new dashboard = a new JSON file here + one line under files.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: monitoring
+configMapGenerator:
+  - name: grafana-dashboards
+    files:
+      - myplatform-services.json
+generatorOptions:
+  # Fixed name: grafana-values.yaml refers to "grafana-dashboards" (no content-hash suffix).
+  disableNameSuffixHash: true

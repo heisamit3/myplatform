@@ -1,7 +1,7 @@
 # Root Application on EKS ("app of apps", ADR 0019/0022): applied once by scripts/k8s-aws-platform.sh.
 # It syncs apps/, which holds everything: platform (Gateway API CRDs, Traefik, StorageClass), data stores,
 # and the services. Sync waves on the child Applications set the order:
-#   -4 Gateway API CRDs, StorageClass → -3 Traefik → -2 namespace, Gateway, Postgres, Redis
+#   -4 Gateway API CRDs, StorageClass → -3 Traefik, Prometheus, Grafana → -2 namespace, Gateway, Postgres, Redis
 #   -1 Kafka, MongoDB, Mailpit → 0 services (identity-service creates its topic at startup, so Kafka must be up)
 apiVersion: argoproj.io/v1alpha1
 kind: Application

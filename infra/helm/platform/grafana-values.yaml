@@ -25,8 +25,13 @@ startupProbe:
   periodSeconds: 10
   failureThreshold: 60
 
-# The admin password is generated into Secret "grafana" (key admin-password).
-# Local only (reached through kubectl port-forward): anonymous users may view, not edit.
+# Admin login from Secret grafana-admin, created once with a random password by scripts/k8s-grafana-admin.sh.
+# Not the chart's generated one: it relies on Helm's `lookup`, which Argo CD doesn't run, so on EKS every sync
+# would render a new password and restart Grafana (ADR 0022).
+admin:
+  existingSecret: grafana-admin
+
+# Reached only through kubectl port-forward: anonymous users may view, not edit.
 grafana.ini:
   analytics:
     check_for_updates: false
@@ -58,6 +63,7 @@ dashboardProviders:
         options:
           path: /var/lib/grafana/dashboards/myplatform
 
-# ConfigMap grafana-dashboards = the JSON files in infra/helm/platform/dashboards/ (created by k8s-local-platform.sh).
+# ConfigMap grafana-dashboards = the JSON files in infra/helm/platform/dashboards/ (its kustomization.yaml;
+# applied by k8s-local-platform.sh on minikube, by Argo CD on EKS).
 dashboardsConfigMaps:
   myplatform: grafana-dashboards

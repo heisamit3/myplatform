@@ -45,8 +45,9 @@ if $monitoring; then
   helm upgrade --install prometheus prometheus-community/prometheus --version "$PROMETHEUS_CHART_VERSION" \
     -n monitoring --create-namespace -f infra/helm/platform/prometheus-values.yaml --wait --timeout 5m >/dev/null
   echo "== Grafana $GRAFANA_CHART_VERSION"
-  kubectl -n monitoring create configmap grafana-dashboards \
-    --from-file=infra/helm/platform/dashboards/ --dry-run=client -o yaml | kubectl apply -f - >/dev/null
+  # ConfigMap grafana-dashboards from the JSON files (kustomize, same source Argo CD uses on EKS).
+  kubectl apply -k infra/helm/platform/dashboards/ >/dev/null
+  ./scripts/k8s-grafana-admin.sh minikube
   helm upgrade --install grafana grafana-community/grafana --version "$GRAFANA_CHART_VERSION" \
     -n monitoring -f infra/helm/platform/grafana-values.yaml --wait --timeout 5m >/dev/null
 fi

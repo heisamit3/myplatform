@@ -291,7 +291,8 @@ Assume I may be on my phone unless I say "I'm at the PC".
   `helm template <svc> infra/helm/service -f infra/helm/services/<svc>/values.yaml -f infra/helm/services/<svc>/values-local.yaml`
   Monitoring (dedicated session, minikube at 3 GB): `./scripts/k8s-local-platform.sh --monitoring`, then
   `kubectl -n monitoring port-forward svc/prometheus-server 9090:80` (API: `curl -s --get localhost:9090/api/v1/query --data-urlencode 'query=up'`)
-  and `kubectl -n monitoring port-forward svc/grafana 3000:80` (anonymous viewer; dashboard uid `myplatform-services`).
+  and `kubectl -n monitoring port-forward svc/grafana 3000:80` (anonymous viewer; dashboard uid `myplatform-services`;
+  admin: `kubectl -n monitoring get secret grafana-admin -o jsonpath='{.data.admin-password}' | base64 -d`).
   Dashboard JSON: `infra/helm/platform/dashboards/` → re-run the script to reload. Remove: `helm uninstall grafana prometheus -n monitoring`
   Argo CD (GitOps, ADR 0019; dedicated session, minikube at 3 GB): `./scripts/k8s-local-platform.sh --argocd` installs it
   (or scales it back up) + the root app. Deploy = push to `main`: CI bumps `infra/helm/services/<svc>/values-image.yaml`,
