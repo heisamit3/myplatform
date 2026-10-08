@@ -6,16 +6,14 @@ Tags: 🖥️ = needs me at the PC. Untagged = fine from the phone.
 
 ---
 
-## 📍 Status (last session: 2026-10-07)
+## 📍 Status (last session: 2026-10-08)
 
-- **Done:** Phases 0–4, Phase 5 except one item, Phase 6 except the final verify. CI is green on `main` and
-  now writes each new image SHA to `infra/helm/services/<svc>/values-image.yaml`; Argo CD deploys it.
+- **Done:** Phases 0–4, Phase 5 except one item, Phase 6. CI is green on `main`, writes each new image SHA to
+  `infra/helm/services/<svc>/values-image.yaml`, and Argo CD deploys it (update verified 2026-10-08).
 - **Open in Phase 5:** rewrite `docs/k8s-objects.md` in my own words (draft exists), then tick it.
-- **Open in Phase 6:** verify an *update*: the next real code change on `main` → bot commit → Argo CD rolls the
-  pod (watch `kubectl -n argocd get applications` + the pod image).
 - **Next:** Phase 7 (AWS). Starts with 🖥️ items: AWS account, MFA, Budgets alerts.
-- **State left behind:** minikube stopped. Argo CD is installed but scaled to 0 (saves ~0.5 GB);
-  `./scripts/k8s-local-platform.sh --argocd` brings it back. Services run the CI images (`a45e5a8`).
+- **State left behind:** minikube stopped (limit back to 2560 MB). Argo CD is installed but scaled to 0 (saves ~0.5 GB);
+  `./scripts/k8s-local-platform.sh --argocd` brings it back. Services run the CI images (`ea63905`).
 
 ## 🖥️ At-PC queue
 
@@ -230,7 +228,11 @@ Decision (2026-10-06): native Windows + Git Bash, not WSL2. Project lives in `C:
       2026-10-07: `bump-tag` job in `_build-image.yml` → `values-image.yaml`. First run: 4 services pushed bot commits
       at once, retries worked, Argo CD deployed `ghcr.io/.../<svc>:a45e5a8`. Gotcha: my own commit message
       quoted the skip marker, so GitHub skipped that push's CI.
-- [ ] Verify: merge a change, then Argo CD syncs the new version without a manual deploy
+- [x] Verify: merge a change, then Argo CD syncs the new version without a manual deploy
+      2026-10-08: change = revert `ea63905` on `main` → CI pushed 4 images + 4 bot commits → minikube started with the
+      cluster still on `b46eb73`, Argo CD woke up and rolled identity-service, api-gateway and web to `ea63905` with no
+      manual deploy. Rolling update kept the old pods serving until the new ones were Ready (zero downtime). All apps
+      Synced/Healthy, 0 restarts; Traefik smoke: register 201, `/me` 200, `/` 200.
 
 ## Phase 7: AWS ephemeral environment (weeks 13–15)
 
