@@ -310,4 +310,5 @@ Assume I may be on my phone unless I say "I'm at the PC".
   Real runs (at the PC, native terraform + AWS credentials), once: `terraform -chdir=infra/terraform/aws/bootstrap init && terraform -chdir=infra/terraform/aws/bootstrap apply`
   → copy `cluster/backend.hcl.example` / `terraform.tfvars.example` (drop `.example`), fill in bucket + my IP →
   `cd infra/terraform/aws/cluster && terraform init -backend-config=backend.hcl && terraform plan`. Kubeconfig: `terraform output -raw kubeconfig_command`
+  Teardown (every AWS session): `./scripts/aws-teardown.sh` (never a bare `terraform destroy`; runbook `docs/runbook-aws-teardown.md`)
 - Memory check: `./scripts/mem.sh` (Windows free RAM, Docker VM size, per-container usage)

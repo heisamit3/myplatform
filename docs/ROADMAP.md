@@ -256,6 +256,9 @@ Decision (2026-10-06): native Windows + Git Bash, not WSL2. Project lives in `C:
       days without Kafka delivered on its start; topic replay → `duplicate, ignored` ×12, no new emails. 2.63 of 3 GiB.
 - [ ] 🖥️ Portfolio capture: screenshots, Grafana dashboard, short demo video, architecture diagram in README
 - [ ] Teardown runbook: delete Argo CD apps and LoadBalancer services → `terraform destroy` → check the billing console
+      2026-10-08: `docs/runbook-aws-teardown.md` + `scripts/aws-teardown.sh` (Argo CD apps → LoadBalancer Services, waits
+      for AWS → namespaces/PVCs, waits for the volumes → destroy → leftover check, non-zero exit on leftovers). shellcheck
+      clean; flow tested against stub CLIs only. Tick after the first real teardown.
 
 ---
 
